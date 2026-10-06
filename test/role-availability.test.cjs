@@ -52,3 +52,19 @@ test('invented or missing message decisions cannot change the board', () => {
   assert.throws(() => respondToRoles(board, messages, []), /exactly one/);
   assert.throws(() => respondToRoles(board, messages, [{ messageId: 'invented', intent: 'take', role: 'Listener' }]), /IDs and order/);
 });
+test('mixed everyday chatter does not change roles or produce replies', () => {
+  const mixed = require('./fixtures/mixed-chatter.cjs');
+  const roleDecisions = ['check', 'take', 'take', 'take', 'check', 'clarify'];
+  const roleNames = ['Listener', 'Timer', 'Listener', 'Listener', 'Timer'];
+  let index = 0;
+  const decisions = mixed.messages.map(message => {
+    if (mixed.chatterIds.includes(message.id)) return { messageId: message.id, intent: 'ignore' };
+    const i = index++;
+    return { messageId: message.id, intent: roleDecisions[i], role: roleNames[i] };
+  });
+  const result = respondToRoles(mixed.board, mixed.messages, decisions);
+  assert.deepEqual(result.board, mixed.expected);
+  assert.deepEqual(result.replies.map(reply => reply.text), mixed.expectedReplies);
+  assert.ok(result.replies.every(reply => !mixed.chatterIds.includes(reply.messageId)));
+  assert.deepEqual(result.notes.map(note => note.kind), ['clarify']);
+});

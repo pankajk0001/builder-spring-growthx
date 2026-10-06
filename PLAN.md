@@ -43,4 +43,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Keep unclear-role questions in the Secretary's self-chat.
 - Prove the flow using six fictional messages, five group replies, and a final table in Test_group; ask the user to check the phone before marking it complete.
 
+## Additional milestone 2 check
+
+- User requested everyday chatter mixed with role-board messages.
+- Posted 11 wholly fictional messages in Test_group: five everyday messages and six role-related messages.
+- Live Hermes interpretation ignored all five everyday messages, including unrelated mentions of timer and listener; five correct role replies and the unchanged expected final board were posted and read back. The unclear request was sent privately to Secretary self-chat.
+- All 28 automated tests pass. Awaiting the user's phone check before pushing this additional checkpoint.
+
 ## Parked list

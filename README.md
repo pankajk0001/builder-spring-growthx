@@ -34,6 +34,8 @@ On your phone, find five `the helper — ROLE CHECK TEST` replies: Listener star
 
 This is a bounded test run, not an always-on listener. Completed runs do not send duplicate messages, and intermediate receipts let a retry resume after confirmed sends.
 
+Run `node scripts/run-milestone-2.mjs --mixed-chatter` for a separate fictional conversation mixing five everyday messages with six role-related messages. The live AI check must ignore all five everyday messages, including unrelated uses of “timer” and “listener,” while producing the same role replies and final board. This uses realistic invented chatter, not real club conversations.
+
 ## Limits and local state
 
 The runner accepts fictional data only, limits input to 300 messages, requests a maximum of 500 output tokens, disables request retries, and records at most 100 requests per rolling hour in a locked laptop file. Its $5 local guard reserves a conservative API-equivalent estimate; Codex subscription allowance is controlled by the signed-in account, rather than an API billing limit.

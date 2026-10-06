@@ -10,14 +10,15 @@ const { renderSource, parseSource } = require('../src/test-transcript.cjs');
 const { renderTable } = require('../src/role-board.cjs');
 const { interpretFictionalMessages } = require('../src/hermes-intent.cjs');
 const { buildBoardDelivery, assertTestDestination, assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
-const fixture = require('../test/fixtures/milestone-2.cjs');
+const mixedChatter = process.argv.includes('--mixed-chatter');
+const fixture = require(mixedChatter ? '../test/fixtures/mixed-chatter.cjs' : '../test/fixtures/milestone-2.cjs');
 const { respondToRoles } = require('../src/role-availability.cjs');
 const stateDir = join(homedir(), '.hermes', 'the-helper');
 const target = JSON.parse(await readFile(join(stateDir, 'test-group.json'), 'utf8'));
 if (target.name !== 'Test_group' || !/^\d+(?:-\d+)?@g\.us$/.test(target.groupId)) {
   throw new Error('The Test_group destination is not configured.');
 }
-const receiptPath = join(stateDir, 'milestone-2-receipt.json');
+const receiptPath = join(stateDir, mixedChatter ? 'mixed-chatter-receipt.json' : 'milestone-2-receipt.json');
 let previous;
 try {
   previous = JSON.parse(await readFile(receiptPath, 'utf8'));
@@ -101,7 +102,7 @@ try {
     const source = await sendVerified(renderSource(fixture.board, fixture.messages));
     receipt = { groupId: target.groupId, sourceMessageId: source.id, sourceText: source.text };
     await save();
-    status('Posted and read back six made-up role requests in Test_group.');
+    status(`Posted and read back ${fixture.messages.length} made-up messages in Test_group.`);
   }
   const input = parseSource(receipt.sourceText);
   assert.deepEqual(input.board, fixture.board);
@@ -111,6 +112,11 @@ try {
     await save();
   }
   const result = respondToRoles(input.board, input.messages, receipt.interpretation.decisions);
+  if (mixedChatter) {
+    const chatter = receipt.interpretation.decisions.filter(decision => fixture.chatterIds.includes(decision.messageId));
+    assert.equal(chatter.length, fixture.chatterIds.length);
+    assert.ok(chatter.every(decision => decision.intent === 'ignore'), 'Every unrelated chatter message must be ignored.');
+  }
   assert.deepEqual(result.board, fixture.expected);
   assert.deepEqual(result.replies.map(reply => reply.text), fixture.expectedReplies);
   assert.deepEqual(result.notes.map(note => note.kind), ['clarify']);
@@ -137,6 +143,7 @@ try {
   receipt.verifiedAt = new Date().toISOString();
   await save();
   status('Verified all five availability replies and the final table in Test_group.');
+  if (mixedChatter) status('Verified that all five everyday chatter messages were ignored, including unrelated mentions of timer and listener.');
   status('WhatsApp confirmed the unclear-message clarification was sent privately to Secretary self-chat.');
   status(renderTable(result.board));
 } catch (error) {
