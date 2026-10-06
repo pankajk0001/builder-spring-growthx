@@ -18,6 +18,8 @@ const {sendPostConfirmation}=require('../src/post-confirmation.cjs');
 const {verifyRestart}=require('../src/restart-check.cjs');
 const {renderTable}=require('../src/role-board.cjs');
 const {queueReminder,applyWeeklyMessage}=require('../src/weekly.cjs');
+const {ensureLive,groupRoleMessage,enqueueGroupMessage,applyLiveBatch,dailyDecision,privateBoardState,hashBoard}=require('../src/live-roles.cjs');
+const {interpretFictionalMessages}=require('../src/hermes-intent.cjs');
 const weeklyMode=process.argv.includes('--weekly');
 const dir=join(homedir(),'.hermes','the-helper'),file=join(dir,'approval-state.json'),lockPath=join(dir,'group-post.lock');
 const target=JSON.parse(await readFile(join(dir,'test-group.json'),'utf8'));
@@ -86,15 +88,68 @@ async function deliverCorrection(){
  await sendPostConfirmation({state,secretaryId,socket:sock,acknowledgements:ack,save});
  status('Approved board delivered to Test_group; private confirmation acknowledged.');
 }
+async function processMembers(){
+ state=ensureLive(state);
+ const live=state.live;
+ if(!live?.inbox.length||state.status!=='approved'||state.editSession||live.retryAt>Date.now()||Object.values(live.posts).some(post=>post.status==='sending'))return;
+ try{
+  if(!live.pendingBatch){
+   const messages=live.inbox.slice(0,10);
+   const reply=await interpretFictionalMessages(live.board,messages,'availability');
+   live.pendingBatch={messages,decisions:reply.decisions};await save();
+  }
+  state=applyLiveBatch(state,live.pendingBatch.messages,live.pendingBatch.decisions);await save();await flush();
+  status('Member messages checked; '+(state.live.dirty?'board changes saved for '+state.live.nextAt:'no new board changes')+'.');
+ }catch{
+  state.live.retryAt=Date.now()+180000;
+  if(!state.live.failureNotified){state.live.failureNotified=true;state.outbox.push({kind:'text',text:'[ask the secretary to try again in few minutes]'});}
+  await save();await flush();status('Role reading paused briefly; saved messages retained.');
+ }
+}
+async function deliverDailyUpdate(){
+ const decision=dailyDecision(state);
+ if(!['send','uncertain'].includes(decision))return;
+ const due=state.live.nextAt;
+ let attempt=state.live.posts[due];
+ if(decision==='uncertain'&&!attempt.id)throw Error('An automatic board send is uncertain. Check Test_group before retrying; no duplicate will be sent.');
+ if(decision==='send'){
+  assert.ok(state.live.board.every(row=>row.member===null||row.member.endsWith(' Example')));
+  const draft={board:structuredClone(state.live.board),meeting:structuredClone(state.meeting)};
+  attempt={status:'sending',hash:hashBoard(draft),board:draft.board,meeting:draft.meeting,startedAt:new Date().toISOString()};
+  state.live.posts[due]=attempt;await save();
+  const sent=await sendTestGroupBoard(sock,target,renderBoardImage(draft).png,'the helper — Updated role board\n'+draft.meeting.club+' · Meeting '+draft.meeting.number);
+  Object.assign(attempt,sent);state.ownIds.push(sent.id);await save();
+ }
+ await ack.wait(attempt.id);
+ attempt.status='sent';attempt.deliveryReceiptVerified=true;attempt.postedAt=new Date().toISOString();
+ state.board=structuredClone(attempt.board);state.boardHash=attempt.hash;state.approvedBoardHash=attempt.hash;
+ state.automaticAuthorization=state.live.authorization;
+ const {board,meeting,...receipt}=attempt;state.groupPost=receipt;
+ state.live.basePostId=receipt.id;state.live.publishedBoard=structuredClone(board);state.live.board=structuredClone(board);state.live.dirty=false;state.live.nextAt=null;
+ await save();await sendPostConfirmation({state,secretaryId,socket:sock,acknowledgements:ack,save});
+ status('Automatic changed-board image delivered to Test_group; private success acknowledged.');
+}
 sock.ev.on('messages.upsert',({type,messages})=>{
  if(!accepting)return;
  for(const message of messages){
+  if(weeklyMode&&message.key?.remoteJid===target.groupId){
+   queue=queue.then(async()=>{
+    state=ensureLive(state);
+    const member=groupRoleMessage({type,message,content:baileys.extractMessageContent(message.message)},state,target);
+    if(!member)return;
+    state=enqueueGroupMessage(state,member);await save();await flush();
+   }).catch(error=>{status(error.message);process.exitCode=1;finish();});
+   continue;
+  }
   const command=secretaryCommand({type,message,content:baileys.extractMessageContent(message.message)},{secretaryId,secretaryLid,startedAt:state.editListenerStartedAt,ownIds:new Set(state.ownIds||[])});
   if(!command)continue;
   queue=queue.then(async()=>{
-   const result=weeklyMode?applyWeeklyMessage(state,command):applyPostedEditMessage(state,command,hashOf());if(!result.reply)return;
+   const before=state;
+   const current=weeklyMode?privateBoardState(state,command.text):state;
+   const result=weeklyMode?applyWeeklyMessage(current,command):applyPostedEditMessage(state,command,hashOf());if(!result.reply)return;
+   if(result.state.live&&before.live){result.state.live={...result.state.live,inbox:before.live.inbox,seen:before.live.seen,pendingBatch:before.live.pendingBatch};}
    state={...result.state,outbox:[...(result.state.outbox||[]),{kind:result.preview?'preview':'text',text:result.reply}]};await save();await flush();
-   await deliverCorrection();status('Private edit processed; stage: '+state.status+'.');
+   await deliverCorrection();state=ensureLive(state);await save();status('Private edit processed; stage: '+state.status+'.');
   }).catch(()=>{status('Editing or delivery could not be verified; saved state retained. Check Test_group before posting manually.');process.exitCode=1;finish();});
  }
 });
@@ -106,6 +161,7 @@ try{
   state.outbox.push({kind:'text',text:'Which day and time should I remind you each week to prepare the first role board? Send a day and 24-hour time, for example Monday 19:00 (India time).'});await save();
  }
  await flush();await deliverCorrection();
+ if(weeklyMode){const metadata=await sock.groupMetadata(target.groupId);assert.equal(metadata.subject,'Test_group');state=ensureLive(state);await save();}
  if(process.argv.includes('--restart-check')){
   const before=JSON.parse(await readFile(join(dir,'restart-before.json'),'utf8'));
   const verified=verifyRestart(before,state);
@@ -119,7 +175,7 @@ try{
  }
  accepting=true;status(weeklyMode?'Weekly helper is running. Setup, reminders and drafts stay private; only approved boards go to Test_group.':'Listening for private EDIT. Only Test_group can receive an approved correction.');
  if(weeklyMode){
-  const tick=()=>{queue=queue.then(async()=>{state=queueReminder(state);await save();await flush();await deliverCorrection();}).catch(error=>{status(error.message);process.exitCode=1;finish();});};
+  const tick=()=>{queue=queue.then(async()=>{state=queueReminder(state);await save();await flush();await deliverCorrection();state=ensureLive(state);await deliverDailyUpdate();await processMembers();await deliverDailyUpdate();}).catch(error=>{status(error.message);process.exitCode=1;finish();});};
   tick();weeklyTimer=setInterval(tick,15000);
  }else timer=setTimeout(()=>{status('Edit listener paused after 15 minutes; rerun to resume.');finish();},15*60000);
  await finished;accepting=false;await queue;

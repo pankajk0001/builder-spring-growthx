@@ -25,7 +25,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 6. Let the Secretary edit a role on the board (private table, corrections, preview, approval, Test_group delivery and private confirmation checked on the phone).
 - [x] 7. Close and reopen the helper, and confirm the board is still there (restored private table confirmed on the phone).
 - [x] 8. Set a weekly private reminder, catch up once after a missed reminder, prepare a fresh board with open roles, add speakers, and approve its first group post (bounded WhatsApp test confirmed; missed-week behavior covered by tests).
-- [ ] 9. Connect live Test_group role replies to the current board and automatic changed-board posting at 20:00 India time, following the existing product schedule. Implementation approval pending.
+- [x] 9. Connect live Test_group role replies to the current board and automatic changed-board posting at 20:00 India time, following the existing product schedule (phone claims and private clarification verified; authorized short-time automatic image test confirmed).
 
 ## Milestone 1 approach
 
@@ -175,8 +175,15 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 ## Short scheduled-post verification
 
+## Live role updates (confirmed bounded test)
+
+- Read fresh text only from Test_group after the first approved board is delivered. Paired-phone messages can simulate fictional members using `Lena Example: I'll take Listener`; other participants use stable fictional aliases in this bounded test. Ignore helper echoes, unrelated chatter and duplicate events.
+- Save at most 300 pending messages privately, interpret ten at a time through the existing capped Hermes call, and protect holders, one-person-per-role, withdrawals and removed slots. Availability questions remain internal; unclear replies and retry notices go only to Secretary self-chat.
+- Pending role changes appear in private TABLE/EDIT. Aggregate changed-board images for 20:00 India time Monday through Friday; changes after that time wait for the next weekday, and this board freezes after Friday's cutoff. Hold automatic sending while Secretary edits or approval is pending. Persist sends and receipts to avoid duplicate or uncertain retries.
+- All 134 tests pass. Live phone claim assigned Listener to Lena Example; Noah Example's competing claim preserved Lena, and an unclear reply produced a private Secretary clarification confirmed on the phone. Restart retained pending changes. User authorized a two-minute automatic delivery test: one changed-board image began sending three seconds after the test time, with no early send. Exact image, four assignments (Speaker 1, Evaluator 1, Timer, Listener), group receipt and private success acknowledgement verified and confirmed on the phone. Monday reminder is unchanged; future normal updates remain at 20:00 India time. Always-on hosting remains deferred.
+
 - User confirmed the short scheduled post on the phone. Observed no early group send; send began five seconds after the selected time. Exact approved image, group delivery and private confirmation acknowledged. Monday reminder remained unchanged; receipt is stored privately outside the repository.
-- Live group role interpretation is still a gap: milestone 2 runners interpret bounded fictional transcripts; the running weekly helper accepts Secretary self-chat commands but does not interpret member messages or schedule changed-board reposts. PRODUCT.md specifies updates at 20:00 on days with changes through Friday. This connection must be built and checked in Test_group before describing it as automatic.
+- The gap found after the short scheduled-post check is now connected and verified under milestone 9: the running weekly helper interprets fresh Test_group member messages and schedules changed-board images. Earlier milestone 2 runners remain separate bounded transcript checks.
 
 - EDIT now shows the latest roles table in the same private reply as correction instructions, before and after posting. It preserves the board and existing group delivery record and sends no image until corrections are entered.
 - All 118 tests pass. The user confirmed the table appears after EDIT in WhatsApp self-chat.

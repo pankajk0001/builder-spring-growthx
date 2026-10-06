@@ -8,4 +8,4 @@ function assertUniqueRoleHolders(board) {
  const conflicts=duplicateRoleHolders(board);
  if(conflicts.length) throw Error(conflicts.map(entry=>`${entry.member} is assigned to ${entry.roles.join(' and ')}. Each person can hold only one role; choose a different person or reopen their other role.`).join('\n'));
 }
-module.exports={duplicateRoleHolders,assertUniqueRoleHolders};
+module.exports={duplicateRoleHolders,assertUniqueRoleHolders,memberKey};
