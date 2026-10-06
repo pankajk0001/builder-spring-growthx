@@ -16,6 +16,7 @@ function secretaryCommand(event, { secretaryId, secretaryLid, startedAt, ownIds 
   const body = event.content;
   const text = body?.conversation ?? body?.extendedTextMessage?.text;
   if (typeof text !== 'string' || !text.trim() || text.length > 200 || text.startsWith('the helper —')) return null;
-  return { id: message.key.id, chatId: secretaryId, senderId: secretaryId, text };
+  return { id: message.key.id, chatId: secretaryId, senderId: secretaryId, text,
+    replyTo: body?.extendedTextMessage?.contextInfo?.stanzaId || null };
 }
 module.exports = { secretaryCommand, isSecretaryChat };

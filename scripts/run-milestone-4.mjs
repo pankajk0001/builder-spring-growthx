@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 
 const require = createRequire(import.meta.url);
 const { renderBoardImage } = require('../src/board-image.cjs');
+const { renderTable } = require('../src/role-board.cjs');
 const { sendPrivateBoardPreview } = require('../src/preview-delivery.cjs');
 const { assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
 const { createApprovalRequest, applyApprovalMessage, describeTime } = require('../src/approval-flow.cjs');
@@ -19,8 +20,8 @@ const target = JSON.parse(await readFile(join(stateDir, 'test-group.json'), 'utf
 assert.equal(target.name, 'Test_group');
 assert.match(target.groupId, /^\d+(?:-\d+)?@g\.us$/);
 assert.ok(fixture.board.every(row => row.member === null || row.member.endsWith(' Example')));
-const rendered = renderBoardImage(fixture);
-const boardHash = createHash('sha256').update(rendered.png).digest('hex');
+let rendered = renderBoardImage(fixture);
+let boardHash = createHash('sha256').update(rendered.png).digest('hex');
 const confirmedPreview = JSON.parse(await readFile(join(stateDir, 'milestone-3-receipt.json'), 'utf8'));
 if (!confirmedPreview.phoneConfirmed || confirmedPreview.sha256 !== boardHash) throw new Error('Confirm the current board preview on the phone before requesting approval.');
 const statePath = join(stateDir, 'approval-state.json');
@@ -38,10 +39,22 @@ assert.equal(confirmedPreview.secretaryId, secretaryId);
 let approval;
 try { approval = JSON.parse(await readFile(statePath, 'utf8')); }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
-if (!approval || approval.boardHash !== boardHash || approval.secretaryId !== secretaryId || approval.targetGroupId !== target.groupId) {
-  approval = { ...createApprovalRequest({ secretaryId, boardHash, requestId: randomUUID() }), targetGroupId: target.groupId,
-    board: fixture.board, meeting: fixture.meeting, outbox: [], ownIds: [] };
+const sameIdentity = approval?.secretaryId === secretaryId && approval?.targetGroupId === target.groupId;
+if (sameIdentity && approval.board && approval.meeting) {
+  assert.ok(approval.board.every(row => row.member === null || row.member.endsWith(' Example')));
+  rendered = renderBoardImage(approval);
+  boardHash = createHash('sha256').update(rendered.png).digest('hex');
 }
+const freshEditCheck = process.argv.includes('--edit-check');
+if (freshEditCheck && approval) {
+  await writeFile(join(stateDir, 'approval-before-edit-check.json'), JSON.stringify(approval, null, 2) + '\n', { mode: 0o600 });
+}
+if (!approval || !sameIdentity || approval.boardHash !== boardHash || freshEditCheck) {
+  const input = sameIdentity && approval.board ? { board: approval.board, meeting: approval.meeting } : fixture;
+  approval = { ...createApprovalRequest({ secretaryId, boardHash, requestId: randomUUID() }), targetGroupId: target.groupId,
+    ...input, testOnly: true, outbox: [], ownIds: [] };
+}
+approval.testOnly = true;
 async function save() {
   const temporary = statePath + '.tmp';
   await writeFile(temporary, JSON.stringify(approval, null, 2) + '\n', { mode: 0o600 });
@@ -69,13 +82,26 @@ const finished = new Promise(resolve => { finish = resolve; });
 async function flushOutbox() {
   while (approval.outbox.length) {
     const item = approval.outbox[0];
-    const sent = await sock.sendMessage(secretaryId, { text: 'the helper — APPROVAL TEST\n' + item.text });
-    assertPrivateSendReceipt(sent, secretaryId);
-    assert.equal(sent.message?.conversation ?? sent.message?.extendedTextMessage?.text, 'the helper — APPROVAL TEST\n' + item.text);
-    approval.ownIds.push(sent.key.id);
+    let sentId;
+    if (item.kind === 'preview') {
+      rendered = renderBoardImage(approval);
+      boardHash = createHash('sha256').update(rendered.png).digest('hex');
+      assert.equal(boardHash, approval.boardHash);
+      const caption = 'the helper — UPDATED APPROVAL PREVIEW\n' + item.text + '\n\nSource table:\n' + renderTable(approval.board);
+      const sent = await sendPrivateBoardPreview(sock, secretaryId, rendered.png, caption);
+      approval.previewReceipt = sent;
+      sentId = sent.id;
+    } else {
+      const sent = await sock.sendMessage(secretaryId, { text: 'the helper — APPROVAL TEST\n' + item.text });
+      assertPrivateSendReceipt(sent, secretaryId);
+      assert.equal(sent.message?.conversation ?? sent.message?.extendedTextMessage?.text, 'the helper — APPROVAL TEST\n' + item.text);
+      sentId = sent.key.id;
+    }
+    approval.ownIds.push(sentId);
     await save();
-    await acknowledgements.wait(sent.key.id);
-    approval.lastReplyMessageId = sent.key.id;
+    await acknowledgements.wait(sentId);
+    approval.lastReplyMessageId = sentId;
+    if (item.kind === 'preview') approval.lastPreviewServerAckVerified = true;
     if (approval.status === 'approved') approval.finalReplyServerAckVerified = true;
     approval.outbox.shift();
     await save();
@@ -95,7 +121,8 @@ sock.ev.on('messages.upsert', ({ type, messages }) => {
     queue = queue.then(async () => {
       const result = applyApprovalMessage(approval, command, boardHash);
       if (!result.reply) return;
-      approval = { ...result.state, outbox: [...approval.outbox, { text: result.reply }] };
+      approval = { ...result.state, outbox: [...(result.state.outbox || []), { text: result.reply, kind: result.preview ? 'preview' : 'text' }] };
+      boardHash = approval.boardHash;
       await save();
       await flushOutbox();
       status(`Secretary reply processed; approval stage: ${approval.status}.`);
@@ -112,10 +139,13 @@ try {
       if (connection === 'close') { clearTimeout(timer); reject(new Error('WhatsApp connection closed.')); if (accepting) { process.exitCode = 1; finish(); } }
     });
   });
-  if (!approval.previewReceipt) {
+  if (!approval.previewReceipt && !approval.outbox.some(item => item.kind === 'preview')) {
     approval.previewReceipt = await sendPrivateBoardPreview(sock, secretaryId, rendered.png,
-      'the helper — APPROVAL TEST\nFictional board for Test_group. Nothing has been posted.\nCheck this exact image, then reply APPROVE to approve it, or CANCEL.');
+      'the helper — APPROVAL TEST\nFictional board for Test_group. Nothing has been posted.\nCheck this exact image, then reply EDIT to correct it, APPROVE to approve it, or CANCEL.');
     approval.ownIds.push(approval.previewReceipt.id);
+    await save();
+    await acknowledgements.wait(approval.previewReceipt.id);
+    approval.lastPreviewServerAckVerified = true;
     await save();
     status('Verified the exact square approval preview in Secretary self-chat.');
   }

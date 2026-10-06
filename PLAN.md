@@ -92,4 +92,13 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Save state and pending private replies atomically outside the repository. The 15-minute test listener resumes the saved request on rerun.
 - All 53 automated tests pass. Real phone replies advanced through APPROVE, time selection, and CONFIRM. Fixed device-specific self-chat addresses, fresh delayed events, and premature connection shutdown after the final reply. The final confirmation was resent and acknowledged by WhatsApp; awaiting the user’s phone check; no group posting or delivery scheduler is enabled in this milestone.
 
+## Pre-approval editing brought forward
+
+- User approved bringing pre-approval editing forward from milestone 6.
+- Preview offers APPROVE, EDIT, or CANCEL. EDIT asks for one correction such as Timer: Noel Example or Timer: Open; existing role assignments and club/meeting details can be corrected.
+- A correction generates a new square preview and clears all previous approval and posting-time fields. The changed image must be approved again, with a new date/time confirmation. Quoted replies to older previews cannot approve the new one.
+- Live checks use made-up names ending Example and fictional club names containing Example. Existing approved test state was archived locally before starting a fresh edit check.
+- All 63 tests pass; the live EDIT command was received from the phone. Correction, regenerated image and renewed approval phone check are in progress.
+- Post-publication edits remain in milestone 6; this addition covers editing before approval only.
+
 ## Parked list

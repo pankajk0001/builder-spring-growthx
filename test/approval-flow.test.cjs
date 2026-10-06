@@ -70,3 +70,57 @@ test('an expired confirmation requires choosing a new future time', () => {
   assert.equal(result.state.status, 'awaiting_time');
   assert.equal(result.state.postAt, null);
 });
+test('EDIT before approval asks for a correction and invalidates any chosen time', () => {
+  let state = send(start(), 'APPROVE').state;
+  state = send(state, '2026-10-08 20:00').state;
+  const result = send(state, 'EDIT');
+  assert.equal(result.state.status, 'awaiting_edit');
+  assert.equal(result.state.postAt, null);
+  assert.equal(result.state.approvedBoardHash, null);
+  assert.match(result.reply, /Timer: Noel Example/);
+});
+test('a correction generates a new image hash and requires fresh approval', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  let state = { ...start(), ...structuredClone(fixture) };
+  state = send(state, 'EDIT').state;
+  const result = send(state, 'Timer: Noel Example');
+  assert.equal(result.state.status, 'awaiting_approval');
+  assert.equal(result.state.board.find(row => row.role === 'Timer').member, 'Noel Example');
+  assert.notEqual(result.state.boardHash, hash);
+  assert.equal(result.state.approvedBoardHash, null);
+  assert.equal(result.preview, true);
+  const staleConfirm = applyApprovalMessage(result.state, { id: 'fictional-stale-confirm', chatId: secretary, senderId: secretary, text: 'CONFIRM' }, result.state.boardHash, now);
+  assert.equal(staleConfirm.state.status, 'awaiting_approval');
+});
+test('an invalid correction remains in editing and preserves the board', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  let state = { ...start(), ...structuredClone(fixture) };
+  state = send(state, 'EDIT').state;
+  const result = send(state, 'Something: Noel Example');
+  assert.equal(result.state.status, 'awaiting_edit');
+  assert.deepEqual(result.state.board, fixture.board);
+  assert.equal(result.preview, undefined);
+});
+test('approving a quoted old preview cannot approve the corrected board', () => {
+  const state = { ...start(), previewReceipt: { id: 'fictional-new-preview' } };
+  const result = applyApprovalMessage(state, { id: 'fictional-old-reply', chatId: secretary, senderId: secretary,
+    text: 'APPROVE', replyTo: 'fictional-old-preview' }, hash, now);
+  assert.equal(result.state.status, 'awaiting_approval');
+  assert.match(result.reply, /latest board preview/);
+});
+test('after an edit survives saving, approval binds to the corrected image and requires a new time', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  let state = { ...start(), ...structuredClone(fixture) };
+  state = send(state, 'EDIT').state;
+  state = JSON.parse(JSON.stringify(send(state, 'Timer: Noel Example').state));
+  const correctedHash = state.boardHash;
+  const command = (text, id) => {
+    state = applyApprovalMessage(state, { id, chatId: secretary, senderId: secretary, text }, correctedHash, now).state;
+  };
+  command('APPROVE', 'fictional-approve-new');
+  assert.equal(state.status, 'awaiting_time');
+  command('2026-10-08 21:00', 'fictional-time-new');
+  command('CONFIRM', 'fictional-confirm-new');
+  assert.equal(state.approvedBoardHash, correctedHash);
+  assert.equal(state.postAt, '2026-10-08T15:30:00.000Z');
+});

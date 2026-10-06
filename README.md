@@ -54,9 +54,13 @@ The Inter font is from the official [Inter repository](https://github.com/rsms/i
 
 Run `npm run test:whatsapp:approval` after confirming the current square image on the phone. The helper sends that exact fictional preview to Secretary self-chat, then waits for real phone replies:
 
-1. Reply `APPROVE` after checking the image, or `CANCEL`.
+1. Reply `APPROVE` after checking the image, `EDIT` to correct it, or `CANCEL`.
 2. Enter a future date and 24-hour time such as `2026-10-08 20:00`, interpreted in India time (IST). The helper shows an example based on the current date.
 3. Check the displayed full date, time and Test_group destination, then reply `CONFIRM` to save approval.
+
+Before approval, reply `EDIT` and send one correction, such as `Timer: Noel Example`, `Timer: Open`, `Evaluator 2: Pia Example`, `Meeting number: 43`, `Meeting date: 2026-10-18`, or `Meeting time: 15:45`. Club names can also be corrected using `Club: MADE UP EXAMPLE CLUB`. The live test accepts only made-up participant names ending Example and club names containing Example. A changed board gets a new square preview; all earlier approval and posting times are cleared. Approve the latest preview and choose a new time. This also works before final confirmation. Post-publication editing remains a later milestone.
+
+Run `node scripts/run-milestone-4.mjs --edit-check` to archive the prior local test request and begin a fresh approval/edit check. Normal reruns resume the existing board, including edits, without resetting to the original fixture.
 
 Approval is bound to the exact image. Changed boards, old messages, other people, group messages, duplicate events, invalid dates and past times cannot approve it. Replies wait for a WhatsApp acknowledgement before being marked sent or closing the connection, so the final confirmation is not abandoned on shutdown. Fresh delayed self-chat events and linked-device addresses are accepted, while messages older than the active request are ignored. These steps make no AI calls. Approval state, message IDs and pending private replies stay outside git in `~/.hermes/the-helper/approval-state.json`; real chat text is not logged. The test listener stops on confirmation or cancellation, or pauses after 15 minutes; rerun to resume the saved request without duplicating the preview. Completed requests do not send duplicate prompts.
 

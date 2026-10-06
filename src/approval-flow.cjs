@@ -45,17 +45,39 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
     const replacement = createApprovalRequest({ secretaryId: state.secretaryId, boardHash: currentBoardHash,
       requestId: state.requestId, now });
     replacement.processedIds = [...state.processedIds, message.id].slice(-300);
-    return { state: replacement, reply: 'The board has changed. Its earlier approval and time are cleared. Please check the new preview before replying APPROVE.' };
+    return { state: { ...state, ...replacement, outbox: [], previewReceipt: null, flowVerified: false, finalReplyServerAckVerified: false }, reply: 'The board has changed. Its earlier approval and time are cleared. Please check the new preview before replying APPROVE.' };
   }
   if (['approved', 'cancelled'].includes(state.status)) return { state, reply: null };
   const next = { ...state, processedIds: [...state.processedIds, message.id].slice(-300) };
   const command = message.text.trim().toLowerCase();
+  if (command === 'approve' && message.replyTo && state.previewReceipt && message.replyTo !== state.previewReceipt.id) {
+    return { state: next, reply: 'That reply refers to an older message. Please check and approve the latest board preview.' };
+  }
   if (command === 'cancel') {
     return { state: { ...next, status: 'cancelled', postAt: null, approvedBoardHash: null },
       reply: 'Approval cancelled. Nothing has been posted to the group.' };
   }
+  if (command === 'edit') {
+    return { state: { ...next, status: 'awaiting_edit', postAt: null, approvedBoardHash: null, approvedAt: null,
+      finalReplyServerAckVerified: false, flowVerified: false },
+      reply: 'What would you like to change?\nSend one correction, like Timer: Noel Example or Timer: Open.\nYou can also change Club, Meeting number, Meeting date, or Meeting time.' };
+  }
+  if (state.status === 'awaiting_edit') {
+    const { editBoard } = require('./board-edit.cjs');
+    const { renderBoardImage } = require('./board-image.cjs');
+    const { createHash } = require('node:crypto');
+    let edited, boardHash;
+    try {
+      edited = editBoard(state, message.text, { testOnly: state.testOnly === true });
+      boardHash = createHash('sha256').update(renderBoardImage(edited).png).digest('hex');
+    } catch (error) { return { state: next, reply: error.message }; }
+    return { state: { ...next, board: edited.board, meeting: edited.meeting, boardHash, status: 'awaiting_approval',
+      postAt: null, approvedBoardHash: null, approvedAt: null, previewReceipt: null, finalReplyServerAckVerified: false, flowVerified: false,
+      editCount: (state.editCount || 0) + 1, lastEditedField: edited.changedField }, preview: true,
+      reply: `Updated ${edited.changedField}. Earlier approval and posting time are cleared.\nCheck this new preview, then reply APPROVE, EDIT, or CANCEL.` };
+  }
   if (state.status === 'awaiting_approval') {
-    if (command !== 'approve') return { state: next, reply: 'Check the board image, then reply APPROVE to approve it, or CANCEL.' };
+    if (command !== 'approve') return { state: next, reply: 'Check the board image, then reply APPROVE to approve it, EDIT to correct it, or CANCEL.' };
     return { state: { ...next, status: 'awaiting_time' },
       reply: `What date and time should this board be posted?\nUse India time and a 24-hour clock, for example: ${dateExample(now)}.` };
   }
@@ -64,10 +86,10 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
     try { postAt = parseIndiaTime(message.text, now); }
     catch (error) { return { state: next, reply: error.message }; }
     return { state: { ...next, status: 'awaiting_confirmation', postAt },
-      reply: `Confirm these details:\nBoard: the exact image you approved\nGroup: Test_group\nTime: ${describeTime(postAt)}\n\nReply CONFIRM to save this approval, or CANCEL. Nothing has been posted.` };
+      reply: `Confirm these details:\nBoard: the exact image you approved\nGroup: Test_group\nTime: ${describeTime(postAt)}\n\nReply CONFIRM to save this approval, EDIT to correct the board, or CANCEL. Nothing has been posted.` };
   }
   if (state.status === 'awaiting_confirmation') {
-    if (command !== 'confirm') return { state: next, reply: 'Reply CONFIRM to save the displayed date and time, or CANCEL.' };
+    if (command !== 'confirm') return { state: next, reply: 'Reply CONFIRM to save the displayed date and time, EDIT to correct the board, or CANCEL.' };
     if (Date.parse(state.postAt) <= now) return { state: { ...next, status: 'awaiting_time', postAt: null },
       reply: 'That time has passed while awaiting confirmation. Please choose a new future date and time.' };
     return { state: { ...next, status: 'approved', approvedBoardHash: state.boardHash, approvedAt: new Date(now).toISOString() },
