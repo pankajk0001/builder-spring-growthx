@@ -22,7 +22,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 3. Generate the role board as an image with the same layout and every name in the correct slot (square preview confirmed directly in WhatsApp self-chat).
 - [x] 4. Get the Secretary's approval to post the board at the time they select (confirmed in Secretary self-chat).
 - [x] 5. Post the board in the WhatsApp group (approved fictional image delivered to Test_group and confirmed on the phone).
-- [ ] 6. Let the Secretary edit a role on the board.
+- [x] 6. Let the Secretary edit a role on the board (private table, corrections, preview, approval, Test_group delivery and private confirmation checked on the phone).
 - [ ] 7. Close and reopen the helper, and confirm the board is still there.
 
 ## Milestone 1 approach
@@ -150,5 +150,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - User requested a table option for checking and editing the board before viewing an image preview. TABLE shows the current renumbered board privately; EDIT opens corrections and returns one image preview. APPROVE remains required before group posting.
 - Table requests preserve approval, pending invalid lines, removed slots, and the group receipt; duplicate command events are ignored. No image is sent for a table request.
 - All 110 tests pass. Sent the current fictional table and TABLE / EDIT instructions privately; WhatsApp acknowledgement verified. Phone correction and final approval checks remain pending.
+
+## Milestone 6 final confirmation
+
+- User confirmed the full milestone repeat on the phone. Verified a fresh acknowledged preview, a new Test_group post matching the exact approved image, group delivery receipt, acknowledged private success message, and no pending replies.
+- Private TABLE works; corrections support multiple lines, invalid-line retries, one role per person, removing paired speaker/evaluator slots, consecutive numbering, and CANCEL. Approval is required before corrected group posting.
+- All 110 tests pass. Milestone 6 is complete; close/reopen verification is milestone 7. The laptop helper must remain awake and connected; no static frontend exists to deploy.
 
 ## Parked list
