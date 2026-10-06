@@ -90,7 +90,7 @@ Error: Corrected board was not posted immediately and the helper confirms that i
 Done: when corrected board is approved
 
 ## 5. The first screen's words
-Headline: [AI helper for Toastmaster club leaders so that they can focus on the helping speakers prepare] 
+Headline: [AI helper for Toastmaster club leaders so that they can focus on the helping speakers prepare]
 Under it: [Read members replies, updates the role-board, and posts the board in Whatsapp]
 Button: [Get Started]
 
