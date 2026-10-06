@@ -11,7 +11,7 @@ const { renderBoardImage } = require('../src/board-image.cjs');
 const { renderTable } = require('../src/role-board.cjs');
 const { sendPrivateBoardPreview } = require('../src/preview-delivery.cjs');
 const { assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
-const { createApprovalRequest, applyApprovalMessage, describeTime } = require('../src/approval-flow.cjs');
+const { createApprovalRequest, applyApprovalMessage, approvalSavedMessage } = require('../src/approval-flow.cjs');
 const { secretaryCommand, isSecretaryChat } = require('../src/approval-inbox.cjs');
 const { createMessageAckTracker } = require('../src/message-ack.cjs');
 const { assertApprovalSource } = require('../src/approval-resume.cjs');
@@ -62,7 +62,7 @@ async function save() {
 }
 await save();
 if (approval.status === 'approved' && !approval.finalReplyServerAckVerified && !approval.outbox.length) {
-  approval.outbox.push({ text: `Approval saved for Test_group: ${describeTime(approval.postAt)}.\nNothing has been posted. Group posting will be connected in the next milestone.` });
+  approval.outbox.push({ text: approvalSavedMessage(approval.postAt) });
   approval.flowVerified = false;
   await save();
 }

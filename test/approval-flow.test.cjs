@@ -22,6 +22,9 @@ test('approval, selected India time, and final confirmation are separate steps',
   assert.equal(result.state.approvedBoardHash, hash);
   assert.match(result.reply, /India time/);
   assert.match(result.reply, /Nothing has been posted/);
+  assert.match(result.reply, /Keep this laptop awake and connected/);
+  assert.match(result.reply, /posting helper running/);
+  assert.doesNotMatch(result.reply, /next milestone/);
 });
 test('another person or a group cannot approve the board', () => {
   const state = start();

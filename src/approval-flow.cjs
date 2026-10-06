@@ -36,6 +36,10 @@ function describeTime(postAt) {
     day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(postAt)) + ' India time (IST)';
 }
 
+function approvalSavedMessage(postAt) {
+  return `Approval saved for Test_group: ${describeTime(postAt)}.\nNothing has been posted yet. Keep this laptop awake and connected, with the posting helper running, for delivery at your selected time.`;
+}
+
 function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()) {
   if (message?.chatId !== state.secretaryId || message.senderId !== state.secretaryId ||
       typeof message.id !== 'string' || !message.id || typeof message.text !== 'string') return { state, reply: null };
@@ -111,9 +115,9 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
     if (Date.parse(state.postAt) <= now) return { state: { ...next, status: 'awaiting_time', postAt: null },
       reply: 'That time has passed while awaiting confirmation. Please choose a new future date and time.' };
     return { state: { ...next, status: 'approved', approvedBoardHash: state.boardHash, approvedAt: new Date(now).toISOString() },
-      reply: `Approval saved for Test_group: ${describeTime(state.postAt)}.\nNothing has been posted. Group posting will be connected in the next milestone.` };
+      reply: approvalSavedMessage(state.postAt) };
   }
   throw new Error('Unknown approval stage.');
 }
 
-module.exports = { createApprovalRequest, applyApprovalMessage, parseIndiaTime, describeTime };
+module.exports = { createApprovalRequest, applyApprovalMessage, parseIndiaTime, describeTime, approvalSavedMessage };
