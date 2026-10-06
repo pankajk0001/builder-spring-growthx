@@ -112,6 +112,13 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 - User confirmed the repeat posting check on the phone, then requested a private success message asking the Secretary to check for needed edits.
 - Send the private review request only after verified group delivery. Save its receipt and wait for acknowledgement; completed reruns send neither another board nor another confirmation.
-- All 79 tests pass. The private confirmation was acknowledged in Secretary self-chat without another group image. Phone confirmation is pending; handling post-publication corrections remains milestone 6.
+- All 79 tests pass. The private confirmation was acknowledged in Secretary self-chat without another group image. The user confirmed the private message on the phone; handling post-publication corrections is now approved for milestone 6.
+
+## Milestone 6 approach
+
+- User approved private EDIT after posting. Reuse batch corrections and invalid-line retries, show a new preview, and require APPROVE before immediately posting the corrected image to Test_group.
+- CANCEL restores the original posted board and receipt. Old preview approvals and duplicate commands cannot post a correction. Group delivery and private confirmation are acknowledged separately.
+- Keep the original group post while a correction is pending. Save all state privately; only fictional test data and the authorized Secretary self-chat are used. Live phone verification is pending.
+- Fixed the reported Listner spelling: it maps to the existing Listener slot. Explicit assignment sentences also work; uncertain wording is rejected. All 87 tests pass. Replayed the user’s exact fictional Timer/Listener batch into one private preview, visually verified both Noel Example assignments, and received WhatsApp acknowledgement. Corrected group delivery still awaits APPROVE from the phone.
 
 ## Parked list

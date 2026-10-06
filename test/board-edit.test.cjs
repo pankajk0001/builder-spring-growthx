@@ -50,3 +50,29 @@ test('the live fictional test refuses non-example names and non-example club det
   assert.throws(() => editBoard(fixture, 'Club: Unspecified Club', { testOnly: true }), /made-up club/);
   assert.equal(editBoard(fixture, 'Timer: Open', { testOnly: true }).board.find(row => row.role === 'Timer').member, null);
 });
+test('ordinary assignment sentences can correct Timer and Listener together',()=>{
+ const edited=editBoard(fixture,'Timer is taken by Noel Example and Listener is taken by Pia Example',{testOnly:true});
+ assert.equal(edited.board.find(r=>r.role==='Timer').member,'Noel Example');
+ assert.equal(edited.board.find(r=>r.role==='Listener').member,'Pia Example');
+ assert.deepEqual(edited.changedFields,['Timer','Listener']);
+});
+test('one explicitly named holder can take both roles, and reverse sentences work',()=>{
+ const shared=editBoard(fixture,'The Timer and Listener roles are taken by Noel Example.',{testOnly:true});
+ assert.equal(shared.board.find(r=>r.role==='Timer').member,'Noel Example');
+ assert.equal(shared.board.find(r=>r.role==='Listener').member,'Noel Example');
+ const reverse=editBoard(fixture,'Noel Example has taken Timer\nPia Example will take Listener',{testOnly:true});
+ assert.equal(reverse.board.find(r=>r.role==='Timer').member,'Noel Example');
+ assert.equal(reverse.board.find(r=>r.role==='Listener').member,'Pia Example');
+});
+test('uncertain or negated assignment sentences cannot fill a role',()=>{
+ for(const text of ['Timer is not taken by Noel Example','Maybe Noel Example has taken Timer','Timer is taken by Noel Example or Pia Example']){
+  assert.throws(()=>editBoard(fixture,text,{testOnly:true}));
+ }
+});
+test('Listner spelling in a semicolon batch still updates the Listener slot',()=>{
+ const edited=editBoard(fixture,'Timer: Noel Example; Listner: Noel Example',{testOnly:true});
+ assert.equal(edited.board.find(r=>r.role==='Timer').member,'Noel Example');
+ assert.equal(edited.board.find(r=>r.role==='Listener').member,'Noel Example');
+ assert.deepEqual(edited.changedFields,['Timer','Listener']);
+ assert.equal(edited.board.length,fixture.board.length);
+});

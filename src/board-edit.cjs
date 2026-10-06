@@ -1,11 +1,13 @@
 const { validateInput } = require('./role-board.cjs');
+const { sentenceCorrections } = require('./correction-sentences.cjs');
 
 function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   validateInput(board, []);
   if (typeof text !== 'string' || /[\r\n;]/.test(text)) throw new Error('Send one correction at a time, like Timer: Noel Example.');
   const match = /^\s*([^:]+):\s*(.+)\s*$/.exec(text);
   if (!match) throw new Error('Use a field followed by a colon and its new value, like Timer: Noel Example or Timer: Open.');
-  const field = match[1].trim().toLowerCase(), value = match[2].trim().replace(/\s+/g, ' ');
+  const suppliedField = match[1].trim().toLowerCase();
+  const field = suppliedField === 'listner' ? 'listener' : suppliedField, value = match[2].trim().replace(/\s+/g, ' ');
   if (!value || value.length > 120) throw new Error('Use a non-empty value of at most 120 characters.');
   const updated = { board: board.map(row => ({ ...row })), meeting: { ...meeting } };
   const row = updated.board.find(row => row.role.toLowerCase() === field);
@@ -43,13 +45,18 @@ function editBoard(input, text, options = {}) {
   const corrections = [...new Set(text.split(/[\r\n;]+/).map(line => line.trim()).filter(Boolean))];
   if (!corrections.length || corrections.length > 25) throw new Error('Send between 1 and 25 corrections, one per line.');
   const byField = new Map(), invalidCorrections = [];
-  for (const correction of corrections) {
+  for (const source of corrections) {
+    let normalized;
+    try { normalized = sentenceCorrections(input.board, source); }
+    catch (error) { invalidCorrections.push({ line: source, reason: error.message }); continue; }
+    for (const correction of normalized) {
     try {
       const edited = editSingleField(input, correction, options);
       const records = byField.get(edited.fieldId) || [];
       records.push({ line: correction, edited, signature: JSON.stringify({ board: edited.board, meeting: edited.meeting }) });
       byField.set(edited.fieldId, records);
-    } catch (error) { invalidCorrections.push({ line: correction, reason: error.message }); }
+    } catch (error) { invalidCorrections.push({ line: source, reason: error.message }); }
+    }
   }
   const validCorrections = [];
   for (const records of byField.values()) {

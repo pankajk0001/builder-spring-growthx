@@ -1,0 +1,107 @@
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+import {homedir} from 'node:os';
+import {join} from 'node:path';
+import {readFile,writeFile,rename,open,unlink} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const require=createRequire(import.meta.url);
+const {renderBoardImage}=require('../src/board-image.cjs');
+const {sendPrivateBoardPreview,sendTestGroupBoard}=require('../src/preview-delivery.cjs');
+const {assertPrivateSendReceipt}=require('../src/note-delivery.cjs');
+const {createMessageAckTracker}=require('../src/message-ack.cjs');
+const {secretaryCommand,isSecretaryChat}=require('../src/approval-inbox.cjs');
+const {applyPostedEditMessage}=require('../src/posted-edit.cjs');
+const {postingDecision}=require('../src/group-posting.cjs');
+const {sendPostConfirmation}=require('../src/post-confirmation.cjs');
+const dir=join(homedir(),'.hermes','the-helper'),file=join(dir,'approval-state.json'),lockPath=join(dir,'group-post.lock');
+const target=JSON.parse(await readFile(join(dir,'test-group.json'),'utf8'));
+assert.equal(target.name,'Test_group');
+let state=JSON.parse(await readFile(file,'utf8'));
+assert.equal(state.targetGroupId,target.groupId);
+assert.equal(state.testOnly,true);
+assert.ok(state.board.every(row=>row.member===null||row.member.endsWith(' Example')));
+assert.match(state.meeting.club,/\bExample\b/i);
+const status=text=>process.stdout.write(text+'\n');console.log=console.info=console.warn=()=>{};
+let lock;
+try {lock=await open(lockPath,'wx',0o600);await lock.writeFile(String(process.pid));}
+catch(error){if(error.code!=='EEXIST')throw error;const pid=Number(await readFile(lockPath,'utf8'));try{process.kill(pid,0);}catch(e){if(e.code!=='ESRCH')throw e;await unlink(lockPath);lock=await open(lockPath,'wx',0o600);await lock.writeFile(String(process.pid));}if(!lock){status('Another posting or editing runner is active.');process.exit(0);}}
+async function save(){await writeFile(file+'.tmp',JSON.stringify(state,null,2)+'\n',{mode:0o600});await rename(file+'.tmp',file);}
+const hashOf=()=>createHash('sha256').update(renderBoardImage(state).png).digest('hex');
+const bridge=join(homedir(),'.hermes','hermes-agent','scripts','whatsapp-bridge'),requireBridge=createRequire(join(bridge,'package.json'));
+const baileys=await import(pathToFileURL(requireBridge.resolve('@whiskeysockets/baileys')).href);
+const {default:pino}=await import(pathToFileURL(requireBridge.resolve('pino')).href);
+const {state:auth,saveCreds}=await baileys.useMultiFileAuthState(target.sessionPath);
+const secretaryId=baileys.jidNormalizedUser(auth.creds.me?.id||'');
+const secretaryLid=auth.creds.me?.lid?baileys.jidNormalizedUser(auth.creds.me.lid):null;
+assert.equal(state.secretaryId,secretaryId);
+const {version}=await baileys.fetchLatestBaileysVersion();
+const sock=baileys.makeWASocket({auth,version,logger:pino({level:'silent'}),syncFullHistory:false,markOnlineOnConnect:false,emitOwnEvents:true,shouldIgnoreJid:jid=>jid!==target.groupId&&!isSecretaryChat(jid,{secretaryId,secretaryLid})});
+let credentialWrites=Promise.resolve();sock.ev.on('creds.update',()=>{credentialWrites=credentialWrites.then(saveCreds);});
+const ack=createMessageAckTracker(sock.ev,{secretaryId,secretaryLid,targetGroupId:target.groupId},30000);
+let accepting=false,queue=Promise.resolve(),finish,timer;
+const finished=new Promise(resolve=>{finish=resolve;});
+async function flush(){
+ while(state.outbox?.length){
+  const item=state.outbox[0];let id=item.sentId;
+  if(!id){
+   if(item.kind==='preview'){
+    const rendered=renderBoardImage(state);assert.equal(hashOf(),state.boardHash);
+    const sent=await sendPrivateBoardPreview(sock,secretaryId,rendered.png,'the helper — CORRECTED BOARD PREVIEW\n'+item.text);
+    state.previewReceipt=sent;id=sent.id;
+   }else{
+    const text='the helper — BOARD EDIT\n'+item.text;
+    const sent=await sock.sendMessage(secretaryId,{text});assertPrivateSendReceipt(sent,secretaryId);
+    assert.equal(sent.message?.conversation??sent.message?.extendedTextMessage?.text,text);id=sent.key.id;
+   }
+   item.sentId=id;state.ownIds.push(id);await save();
+  }
+  await ack.wait(id);state.lastReplyMessageId=id;
+  if(item.kind==='preview')state.lastPreviewServerAckVerified=true;
+  if(state.status==='approved'&&state.postingMode==='correction')state.finalReplyServerAckVerified=true;
+  state.outbox.shift();await save();
+ }
+}
+async function deliverCorrection(){
+ if(state.status!=='approved'||state.postingMode!=='correction')return;
+ assert.equal(state.approvedBoardHash,hashOf());
+ state.flowVerified=true;await save();
+ const decision=postingDecision(state,target,hashOf());
+ if(decision==='complete'){await sendPostConfirmation({state,secretaryId,socket:sock,acknowledgements:ack,save});return;}
+ if(decision==='uncertain'&&!state.groupPost.id)throw Error('Previous correction send is uncertain; check Test_group before retrying.');
+ assert.ok(decision==='send'||decision==='uncertain');
+ if(decision==='send'){
+  state.groupPost={status:'sending',hash:hashOf(),startedAt:new Date().toISOString()};await save();
+  const sent=await sendTestGroupBoard(sock,target,renderBoardImage(state).png,'the helper — Corrected role board\n'+state.meeting.club+' · Meeting '+state.meeting.number);
+  state.groupPost={...state.groupPost,...sent};await save();
+ }
+ await ack.wait(state.groupPost.id);
+ state.groupPost={...state.groupPost,status:'sent',deliveryReceiptVerified:true,postedAt:new Date().toISOString()};await save();
+ await sendPostConfirmation({state,secretaryId,socket:sock,acknowledgements:ack,save});
+ status('Corrected approved board delivered to Test_group; private confirmation acknowledged.');
+}
+sock.ev.on('messages.upsert',({type,messages})=>{
+ if(!accepting)return;
+ for(const message of messages){
+  const command=secretaryCommand({type,message,content:baileys.extractMessageContent(message.message)},{secretaryId,secretaryLid,startedAt:state.editListenerStartedAt,ownIds:new Set(state.ownIds||[])});
+  if(!command)continue;
+  queue=queue.then(async()=>{
+   const result=applyPostedEditMessage(state,command,hashOf());if(!result.reply)return;
+   state={...result.state,outbox:[...(result.state.outbox||[]),{kind:result.preview?'preview':'text',text:result.reply}]};await save();await flush();
+   await deliverCorrection();status('Private edit processed; stage: '+state.status+'.');
+  }).catch(()=>{status('Editing or delivery could not be verified; saved state retained. Check Test_group before posting manually.');process.exitCode=1;finish();});
+ }
+});
+try{
+ await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('WhatsApp connection timed out.')),45000);sock.ev.on('connection.update',({connection})=>{if(connection==='open'){clearTimeout(timeout);resolve();}if(connection==='close'){clearTimeout(timeout);reject(Error('WhatsApp connection closed.'));if(accepting){process.exitCode=1;finish();}}});});
+ state.ownIds||=[];state.outbox||=[];state.editListenerStartedAt||=Date.now();await save();
+ await flush();await deliverCorrection();
+ if(!state.postEditGuideSent){
+  state.outbox.push({text:'Your board is posted in Test_group. Reply EDIT here if changes are required. Send several corrections together; I will show one new preview and post it only after you reply APPROVE. Reply CANCEL to keep the current posted board.'});await save();await flush();state.postEditGuideSent=true;await save();
+ }
+ accepting=true;status('Listening for private EDIT. Only Test_group can receive an approved correction.');
+ timer=setTimeout(()=>{status('Edit listener paused after 15 minutes; rerun to resume.');finish();},15*60000);
+ await finished;accepting=false;await queue;
+}catch(error){status(error.message);process.exitCode=1;}
+finally{clearTimeout(timer);accepting=false;sock.end(undefined);await credentialWrites;await lock.close();await unlink(lockPath);}
+process.exit(process.exitCode||0);

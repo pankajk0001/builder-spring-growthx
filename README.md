@@ -79,3 +79,9 @@ Milestone 1 was posted and checked through WhatsApp, and the user confirmed the 
 Run `npm run test:whatsapp:post` to post only when the approved time has arrived. Add `-- --watch` to wait on this laptop; it must stay awake and connected. The runner uses only Test_group and fictional data, sends the approved image once, and waits for WhatsApp acknowledgement. A saved uncertain attempt blocks automatic resends; when an image receipt exists, rerunning checks that existing receipt without sending another image. Use `-- --post-now-test` only after the Secretary explicitly chooses an immediate test post; the previous selected time is preserved in the private record. Credentials and posting records stay outside the repository.
 
 After verified group delivery, the helper privately confirms the post to the Secretary and asks them to check for edits. The confirmation is saved and acknowledged separately; rerunning does not repeat either the board or the completed confirmation. Post-publication correction handling remains milestone 6.
+
+### Editing a posted board (milestone 6)
+
+Run `npm run test:whatsapp:edit` to listen in Secretary self-chat for 15 minutes; rerun to resume saved state. Reply EDIT, send corrections together, then check the corrected private preview. APPROVE posts that exact image immediately to Test_group and sends a private delivery confirmation. CANCEL restores the original published board. Invalid lines are quoted and valid lines retained for retry; no group image is sent while corrections are pending. The laptop must remain awake and connected.
+
+Role corrections accept the common Listner spelling for Listener and explicit sentences such as “Timer is taken by Noel Example and Listener is taken by Pia Example.” Uncertain or negated assignments require clarification.
