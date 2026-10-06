@@ -3,7 +3,7 @@ const {createApprovalRequest,applyApprovalMessage}=require('./approval-flow.cjs'
 const {applyPostedEditMessage}=require('./posted-edit.cjs');
 const {renderBoardImage}=require('./board-image.cjs');
 const {renderTable}=require('./role-board.cjs');
-const {DAYS,parseMeetingDay,nextMeetingDate}=require('./meeting-cycle.cjs');
+const {DAYS,parseMeetingDay,parseMeetingTime,nextMeetingDate}=require('./meeting-cycle.cjs');
 const WEEK=7*86400000, OFFSET=330*60000;
 function parseSchedule(text){
  const m=/^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\s+(\d{2}):(\d{2})$/i.exec(text.trim());
@@ -31,6 +31,7 @@ function queueReminder(state,now=Date.now()){
 }
 function startWeeklyBoard(state,now=Date.now()){
  if(!Number.isInteger(state.weekly?.meetingDay))throw Error('Set your meeting day first, for example Sunday.');
+ if(!state.weekly.meetingTime)throw Error('Set your usual meeting time first, for example 2:30 PM.');
  if(!state.weekly?.pendingWeek)throw Error('No weekly board is waiting.');
  if(state.weekly.activeWeek===state.weekly.pendingWeek)throw Error('This week’s board is already open. Reply TABLE or EDIT.');
  if(state.status!=='cancelled'&&(state.status!=='approved'||state.groupPost?.status!=='sent'||state.editSession))throw Error('Finish or cancel the current draft before starting the next week.');
@@ -39,6 +40,7 @@ function startWeeklyBoard(state,now=Date.now()){
  const meeting={...state.meeting};
  const due=Date.parse(state.weekly.pendingWeek);
  meeting.date=nextMeetingDate(state.weekly.meetingDay,due);
+ meeting.time=parseMeetingTime(state.weekly.meetingTime);
  if(/^\d+$/.test(meeting.number))meeting.number=String(Number(meeting.number)+1);
  const boardHash=createHash('sha256').update(renderBoardImage({board,meeting}).png).digest('hex');
  return {...createApprovalRequest({secretaryId:state.secretaryId,boardHash,requestId:randomUUID(),now}),
@@ -62,12 +64,17 @@ function applyWeeklyMessage(state,command,now=Date.now()){
   try{
    const meetingDay=parseMeetingDay(command.text);
    if(state.weekly.schedule.day===(meetingDay+6)%7&&state.weekly.schedule.time>='20:00')throw Error('That reminder is after the final update cutoff. Send an earlier reminder day and time, then your meeting day. For example Monday 19:00, then Tuesday.');
-   return {state:{...state,weekly:{...state.weekly,meetingDay},processedIds:[...state.processedIds,command.id].slice(-300)},
-    reply:'Meeting day saved: '+DAYS[meetingDay]+'. New weekly boards will use the next '+DAYS[meetingDay]+' after the reminder. Changed boards post at 20:00 India time on any day up to 20:00 the day before that board’s meeting. Unchanged boards are not reposted. Keep this laptop awake and connected with the helper running. One missed reminder arrives when you reopen it.\n\nYour current board keeps its displayed meeting date; use EDIT to change that date.'};
+   return {state:{...state,weekly:{...state.weekly,meetingDay,meetingTimePromptQueued:true},processedIds:[...state.processedIds,command.id].slice(-300)},
+    reply:'Meeting day saved: '+DAYS[meetingDay]+'.\n\nWhat time does your meeting usually start? Send a time like 14:30 or 2:30 PM (India time). I will fill the usual day and time on every new weekly board.'};
   }catch(error){
    try{const schedule=parseSchedule(command.text);return {state:{...state,weekly:{...state.weekly,schedule,nextAt:nextReminder(schedule,now)},processedIds:[...state.processedIds,command.id].slice(-300)},reply:'Reminder updated. Now send your meeting day, for example Sunday.'};}
    catch{return {state:{...state,processedIds:[...state.processedIds,command.id].slice(-300)},reply:error.message};}
   }
+ }
+ if(!state.weekly.meetingTime){
+  try{const meetingTime=parseMeetingTime(command.text);return {state:{...state,weekly:{...state.weekly,meetingTime},processedIds:[...state.processedIds,command.id].slice(-300)},
+   reply:'Usual meeting saved: '+DAYS[state.weekly.meetingDay]+' at '+meetingTime+' India time. Every new weekly board will use that day and time automatically. EDIT can change a single meeting without changing your usual schedule. Changed boards post at 20:00 through the day before the displayed meeting date; unchanged boards are skipped.'};}
+  catch(error){return {state:{...state,processedIds:[...state.processedIds,command.id].slice(-300)},reply:error.message};}
  }
  if(text==='start'){
   try{const fresh=startWeeklyBoard(state,now);const item=fresh.outbox.pop();fresh.processedIds=[...fresh.processedIds,command.id].slice(-300);return {state:fresh,reply:item.text};}

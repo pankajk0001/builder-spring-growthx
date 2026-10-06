@@ -27,6 +27,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 8. Set a weekly private reminder, catch up once after a missed reminder, prepare a fresh board with open roles, add speakers, and approve its first group post (bounded WhatsApp test confirmed; missed-week behavior covered by tests).
 - [x] 9. Connect live Test_group role replies to the current board and automatic changed-board posting at 20:00 India time, following the existing product schedule (phone claims and private clarification verified; authorized short-time automatic image test confirmed).
 - [x] 10. Repost only when roles differ from the last posted board, and base the cycle on any meeting day, ending at 20:00 India time the day before the meeting (Sunday dated board confirmed on the phone; all seven days and unchanged-board checks tested).
+- [x] 11. Save the usual meeting day and time during setup, then fill both on every fresh weekly board (Sunday 4:30 PM saved; auto-filled fresh preview confirmed on the phone).
 
 ## Milestone 1 approach
 
@@ -167,6 +168,8 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Repeated the restart check and the user confirmed the restored roles and names on the phone; milestone 7 is complete.
 
 ## Parked list
+
+- Usual meeting schedule implementation: after reminder day/time and meeting day, ask for the usual meeting time (24-hour or AM/PM, India time). Persist it privately; START sets each fresh board's date from the usual weekday and its time from the usual time. One-off EDIT changes do not replace those defaults. All 143 tests pass. The user saved Sunday 4:30 PM and confirmed the fresh weekly preview auto-filled 11 October at 4:30 PM. Exact preview acknowledged in WhatsApp; no test group post. Restored the previous posted board after the preview test, retaining the saved usual schedule.
 
 - Withdrawal/reassignment verified through live phone messages: Lena Example withdrew from Listener, which reopened; Noah Example then took it. Speaker 1, Evaluator 1 and Timer were preserved. Next approved change: meeting-day cycle and unchanged-board guard, with the final automatic update at 20:00 the day before the meeting.
 - Meeting-cycle implementation: first setup asks reminder day/time, then meeting day. New drafts use the next selected meeting day after the reminder; the current board retains its explicitly displayed date unless the Secretary edits it. Daily updates support all seven days through the displayed meeting date's previous-day 20:00 cutoff. Unchanged-role comparison against the last published board blocks a repost, including withdrawal/reclaim sequences that cancel out. Approval of an identical Secretary edit keeps the existing group receipt rather than posting again.

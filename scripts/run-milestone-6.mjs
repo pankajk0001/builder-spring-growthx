@@ -164,6 +164,10 @@ try{
   state.weekly.meetingDayPromptQueued=true;
   state.outbox.push({kind:'text',text:'Which day of the week is your meeting? Send just the day, for example Sunday. Any day works. Your saved reminder day and time stay the same.'});await save();
  }
+ if(weeklyMode&&Number.isInteger(state.weekly?.meetingDay)&&!state.weekly.meetingTime&&!state.weekly.meetingTimePromptQueued){
+  state.weekly.meetingTimePromptQueued=true;
+  state.outbox.push({kind:'text',text:'What time does your meeting usually start? Send a time like 14:30 or 2:30 PM (India time). I will fill your saved meeting day and this time on every new weekly board.'});await save();
+ }
  await flush();await deliverCorrection();
  if(weeklyMode){const metadata=await sock.groupMetadata(target.groupId);assert.equal(metadata.subject,'Test_group');state=ensureLive(state);await save();}
  if(process.argv.includes('--restart-check')){

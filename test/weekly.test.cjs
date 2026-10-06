@@ -16,20 +16,20 @@ test('missed reminders catch up once for the latest week and survive restart',()
  assert.equal(result.weekly.nextAt,'2026-10-26T13:30:00.000Z');
 });
 test('a new week clears assignments and approval while retaining the prior posted board',()=>{
- const old={...structuredClone(fixture),secretaryId:'10000000001@s.whatsapp.net',targetGroupId:'10000000002@g.us',testOnly:true,status:'approved',groupPost:{status:'sent'},outbox:[],weekly:{schedule:{day:1,time:'19:00'},meetingDay:6,pendingWeek:'2026-10-19T13:30:00.000Z'}};
+ const old={...structuredClone(fixture),secretaryId:'10000000001@s.whatsapp.net',targetGroupId:'10000000002@g.us',testOnly:true,status:'approved',groupPost:{status:'sent'},outbox:[],weekly:{schedule:{day:1,time:'19:00'},meetingDay:6,meetingTime:"2:30 PM",pendingWeek:'2026-10-19T13:30:00.000Z'}};
  const fresh=startWeeklyBoard(old);
  assert.ok(fresh.board.every(row=>row.member===null));assert.equal(fresh.status,'awaiting_edit');assert.equal(fresh.groupPost,undefined);
  assert.equal(fresh.weekly.previousBoard.board[0].member,'Noel Example');assert.equal(fresh.weekly.previousBoard.groupPost.status,'sent');
  assert.equal(old.board[0].member,'Noel Example');assert.equal(fresh.meeting.date,'24 October 2026');
 });
 test('a reminder never replaces an unapproved draft or posts a group message',()=>{
- const state={...fixture,status:'awaiting_edit',weekly:{schedule:{day:1,time:'19:00'},meetingDay:6,nextAt:'2026-10-05T13:30:00.000Z'},outbox:[]};
+ const state={...fixture,status:'awaiting_edit',weekly:{schedule:{day:1,time:'19:00'},meetingDay:6,meetingTime:"2:30 PM",nextAt:'2026-10-05T13:30:00.000Z'},outbox:[]};
  const reminded=queueReminder(state,Date.parse('2026-10-05T14:00:00Z'));
  assert.deepEqual(reminded.board,state.board);assert.equal(reminded.status,'awaiting_edit');assert.equal(reminded.outbox[0].kind,'text');
  assert.throws(()=>startWeeklyBoard(reminded),/Finish/);
 });
 const identity={secretaryId:'10000000001@s.whatsapp.net',targetGroupId:'10000000002@g.us',testOnly:true};
-function saved(){return {...structuredClone(fixture),...identity,status:'approved',groupPost:{status:'sent',deliveryReceiptVerified:true},outbox:[],processedIds:[],weekly:{schedule:{day:1,time:'19:00'},meetingDay:6,pendingWeek:'2026-10-19T13:30:00.000Z'}};}
+function saved(){return {...structuredClone(fixture),...identity,status:'approved',groupPost:{status:'sent',deliveryReceiptVerified:true},outbox:[],processedIds:[],weekly:{schedule:{day:1,time:'19:00'},meetingDay:6,meetingTime:"2:30 PM",pendingWeek:'2026-10-19T13:30:00.000Z'}};}
 let event=0;
 function send(s,text){return applyWeeklyMessage(s,{chatId:identity.secretaryId,senderId:identity.secretaryId,id:'fictional-weekly-'+(++event),text},Date.parse('2026-10-19T14:00:00Z'));}
 test('weekly speakers, preview, approval and selected posting time preserve the reminder',()=>{
@@ -65,10 +65,16 @@ test('weekly setup and draft commands reject other people and group messages',()
 test('first setup asks reminder day/time before meeting day and supports a Sunday weekly board',()=>{
  let s={...saved(),weekly:undefined};const reminder=send(s,'Monday 19:00');s=reminder.state;
  assert.match(reminder.reply,/Which day of the week/);assert.equal(s.weekly.meetingDay,undefined);
- const day=send(s,'Sunday');s=day.state;assert.equal(s.weekly.meetingDay,0);assert.match(day.reply,/Unchanged boards are not reposted/);
+ const day=send(s,'Sunday');s=day.state;assert.equal(s.weekly.meetingDay,0);assert.match(day.reply,/What time/);s=send(s,'14:30').state;assert.equal(s.weekly.meetingTime,'2:30 PM');
  s.weekly.pendingWeek='2026-10-19T13:30:00.000Z';const fresh=send(s,'START');assert.equal(fresh.state.meeting.date,'25 October 2026');
 });
 test('an after-cutoff reminder can be corrected without losing the meeting-day setup',()=>{
  let s={...saved(),weekly:{schedule:{day:1,time:'21:00'}}};assert.match(send(s,'Tuesday').reply,/earlier reminder/);
  s=send(s,'Monday 19:00').state;s=send(s,'Tuesday').state;assert.equal(s.weekly.meetingDay,2);
+});
+test('each weekly board restores the usual time after a one-off meeting-time edit',()=>{
+ const s=saved();s.weekly.meetingTime='7:15 PM';s.meeting.time='10:00 AM';
+ const fresh=send(s,'START');assert.equal(fresh.state.meeting.time,'7:15 PM');assert.equal(s.meeting.time,'10:00 AM');
+ let edited=send(fresh.state,'Meeting time: 11:00 AM').state;assert.equal(edited.meeting.time,'11:00 AM');assert.equal(edited.weekly.meetingTime,'7:15 PM');
+ const restored=JSON.parse(JSON.stringify(edited));assert.equal(restored.weekly.meetingTime,'7:15 PM');
 });
