@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { secretaryCommand } = require('../src/approval-inbox.cjs');
+const { secretaryCommand, isSecretaryChat } = require('../src/approval-inbox.cjs');
 const config = { secretaryId: '15550000001@s.whatsapp.net', secretaryLid: '15550000009@lid', startedAt: 1791331200000, ownIds: new Set(['fictional-helper']) };
 const event = () => ({ type: 'notify', message: { key: { remoteJid: config.secretaryId, fromMe: true, id: 'fictional-phone' }, messageTimestamp: config.startedAt / 1000 + 1 }, content: { conversation: 'APPROVE' } });
 test('fresh phone commands from either self-chat address identify the same Secretary', () => {
@@ -9,9 +9,23 @@ test('fresh phone commands from either self-chat address identify the same Secre
   input.message.key.remoteJid = config.secretaryLid;
   assert.equal(secretaryCommand(input, config).chatId, config.secretaryId);
 });
+test('a self-chat reply from a linked device is still the Secretary', () => {
+  const input = event();
+  input.message.key.remoteJid = '15550000001:7@s.whatsapp.net';
+  assert.equal(secretaryCommand(input, config)?.senderId, config.secretaryId);
+  assert.equal(isSecretaryChat(input.message.key.remoteJid, config), true);
+  assert.equal(isSecretaryChat('15550000002:7@s.whatsapp.net', config), false);
+});
+test('a delayed self-chat command newer than the active request is accepted', () => {
+  const input = event();
+  input.type = 'append';
+  assert.equal(secretaryCommand(input, config)?.senderId, config.secretaryId);
+  input.message.messageTimestamp -= 60;
+  assert.equal(secretaryCommand(input, config), null);
+});
 test('history, other people, group messages, and the helper itself cannot give approval', () => {
   const changes = [
-    e => { e.type = 'append'; },
+    e => { e.type = 'history'; },
     e => { e.message.key.remoteJid = '123456789000000@g.us'; },
     e => { e.message.key.remoteJid = '15550000002@s.whatsapp.net'; },
     e => { e.message.key.fromMe = false; },

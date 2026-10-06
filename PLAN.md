@@ -90,6 +90,6 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Ask one question at a time: approval, date and 24-hour time in India time, then CONFIRM after displaying the exact date/time and Test_group destination.
 - Bind final approval to the preview's image hash. Reject other people, group messages, old history, duplicate events, invalid/past dates, and confirmation after the selected time has passed. A changed board clears earlier approval and time.
 - Save state and pending private replies atomically outside the repository. The 15-minute test listener resumes the saved request on rerun.
-- All 48 automated tests pass. Live phone approval test is in progress; no group posting or delivery scheduler is enabled in this milestone.
+- All 53 automated tests pass. Real phone replies advanced through APPROVE, time selection, and CONFIRM. Fixed device-specific self-chat addresses, fresh delayed events, and premature connection shutdown after the final reply. The final confirmation was resent and acknowledged by WhatsApp; awaiting the user’s phone check; no group posting or delivery scheduler is enabled in this milestone.
 
 ## Parked list
