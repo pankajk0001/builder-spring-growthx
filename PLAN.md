@@ -157,4 +157,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Private TABLE works; corrections support multiple lines, invalid-line retries, one role per person, removing paired speaker/evaluator slots, consecutive numbering, and CANCEL. Approval is required before corrected group posting.
 - All 110 tests pass. Milestone 6 is complete; close/reopen verification is milestone 7. The laptop helper must remain awake and connected; no static frontend exists to deploy.
 
+## Milestone 7 restart verification
+
+- User requested the next milestone. Closed the active helper, saved a private restart snapshot and reopened it in a new process.
+- Verified saved role holders, meeting details, removals, consecutive numbering, image checksum, approval and delivery records. Existing group post and private success receipt were reused; no group image was resent.
+- All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Awaiting the user’s phone confirmation before marking milestone 7 complete.
+
 ## Parked list

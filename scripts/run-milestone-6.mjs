@@ -15,6 +15,8 @@ const {secretaryCommand,isSecretaryChat}=require('../src/approval-inbox.cjs');
 const {applyPostedEditMessage}=require('../src/posted-edit.cjs');
 const {postingDecision}=require('../src/group-posting.cjs');
 const {sendPostConfirmation}=require('../src/post-confirmation.cjs');
+const {verifyRestart}=require('../src/restart-check.cjs');
+const {renderTable}=require('../src/role-board.cjs');
 const dir=join(homedir(),'.hermes','the-helper'),file=join(dir,'approval-state.json'),lockPath=join(dir,'group-post.lock');
 const target=JSON.parse(await readFile(join(dir,'test-group.json'),'utf8'));
 assert.equal(target.name,'Test_group');
@@ -96,6 +98,14 @@ try{
  await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('WhatsApp connection timed out.')),45000);sock.ev.on('connection.update',({connection})=>{if(connection==='open'){clearTimeout(timeout);resolve();}if(connection==='close'){clearTimeout(timeout);reject(Error('WhatsApp connection closed.'));if(accepting){process.exitCode=1;finish();}}});});
  state.ownIds||=[];state.outbox||=[];state.editListenerStartedAt||=Date.now();await save();
  await flush();await deliverCorrection();
+ if(process.argv.includes('--restart-check')){
+  const before=JSON.parse(await readFile(join(dir,'restart-before.json'),'utf8'));
+  const verified=verifyRestart(before,state);
+  state.outbox.push({kind:'text',text:'Restart check passed. Your saved board, edits, removed speaker slots and numbering are still here. Nothing was reposted to the group.\n\n'+renderTable(state.board)+'\n\nReply TABLE to view this board again, or EDIT to make changes.'});
+  await save();await flush();
+  await writeFile(join(dir,'restart-receipt.json'),JSON.stringify({...verified,privateTableAcknowledged:true,checkedAt:new Date().toISOString()},null,2)+'\n',{mode:0o600});
+  status('Restart verified: saved board and delivery records unchanged; restored table acknowledged privately.');
+ }
  if(!state.postEditGuideSent){
   state.outbox.push({text:'Your board is posted in Test_group. Reply TABLE to view the roles as a table, or EDIT if changes are required. Send several corrections together; I will show one new preview and post it only after you reply APPROVE. Reply CANCEL to keep the current posted board.'});await save();await flush();state.postEditGuideSent=true;await save();
  }

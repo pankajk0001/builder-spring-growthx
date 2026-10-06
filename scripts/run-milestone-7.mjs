@@ -1,0 +1,12 @@
+import {createRequire} from 'node:module';
+import {homedir} from 'node:os';
+import {join} from 'node:path';
+import {readFile,writeFile} from 'node:fs/promises';
+const require=createRequire(import.meta.url);
+const {restartSnapshot}=require('../src/restart-check.cjs');
+const dir=join(homedir(),'.hermes','the-helper');
+const state=JSON.parse(await readFile(join(dir,'approval-state.json'),'utf8'));
+if(state.status!=='approved'||state.groupPost?.status!=='sent'||state.groupPost.secretaryConfirmation?.status!=='sent'||state.outbox?.length)throw Error('Complete the current posting flow before testing restart.');
+await writeFile(join(dir,'restart-before.json'),JSON.stringify(restartSnapshot(state),null,2)+'\n',{mode:0o600});
+process.argv.push('--restart-check');
+await import('./run-milestone-6.mjs');

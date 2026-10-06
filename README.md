@@ -93,3 +93,7 @@ To remove a prepared-speaker slot, send `Speaker 2: Remove` while editing. Speak
 The private edit runner records preview delivery by the exact image checksum. Duplicate queued previews and restart retries reuse the existing acknowledged preview; a changed image gets a new preview. If a send is uncertain and has no receipt, it stops rather than risking a duplicate.
 
 Reply TABLE in Secretary self-chat to view the current role board as a text table. Reply EDIT, send corrections together, and check the resulting image preview. TABLE can also be used while correcting invalid lines; it keeps pending corrections and does not change approval or post an image.
+
+### Closing and reopening (milestone 7)
+
+Stop the active helper, then run `npm run test:whatsapp:restart` after a completed posting flow. It checks the saved board, role edits, removed slots, numbering, approval and delivery records, then privately sends the restored table. It does not repost the group board. The private edit listener remains available for 15 minutes; rerun `npm run test:whatsapp:edit` to resume it. Restart snapshots and receipts remain outside the repository.
