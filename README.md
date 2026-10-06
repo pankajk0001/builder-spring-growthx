@@ -97,3 +97,9 @@ Reply TABLE in Secretary self-chat to view the current role board as a text tabl
 ### Closing and reopening (milestone 7)
 
 Stop the active helper, then run `npm run test:whatsapp:restart` after a completed posting flow. It checks the saved board, role edits, removed slots, numbering, approval and delivery records, then privately sends the restored table. It does not repost the group board. The private edit listener remains available for 15 minutes; rerun `npm run test:whatsapp:edit` to resume it. Restart snapshots and receipts remain outside the repository.
+
+### Weekly reminders
+
+Run `npm start` for the weekly laptop helper. Its first private question asks for a day and 24-hour India time, such as `Monday 19:00`. Keep the laptop awake and connected. The process keeps running until stopped; restarting preserves the schedule and sends one catch-up reminder for the latest missed week, rather than every missed week.
+
+The private reminder asks for START. START opens a fresh board with all existing visible roles open; enter this week's speakers using made-up names ending in Example for the bounded test. Corrections return an image preview; APPROVE asks for the first posting date/time, and CONFIRM saves it. This runner waits and posts the exact approved image to Test_group at the selected time, then confirms privately. TABLE and EDIT remain available after posting. CANCEL restores the previous posted board. An unfinished draft is preserved when the next reminder arrives. Saved boards, schedule and receipts stay outside the repository. This is laptop operation; always-on hosting remains deferred.

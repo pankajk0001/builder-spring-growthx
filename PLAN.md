@@ -24,6 +24,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 5. Post the board in the WhatsApp group (approved fictional image delivered to Test_group and confirmed on the phone).
 - [x] 6. Let the Secretary edit a role on the board (private table, corrections, preview, approval, Test_group delivery and private confirmation checked on the phone).
 - [x] 7. Close and reopen the helper, and confirm the board is still there (restored private table confirmed on the phone).
+- [x] 8. Set a weekly private reminder, catch up once after a missed reminder, prepare a fresh board with open roles, add speakers, and approve its first group post (bounded WhatsApp test confirmed; missed-week behavior covered by tests).
 
 ## Milestone 1 approach
 
@@ -164,6 +165,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Repeated the restart check and the user confirmed the restored roles and names on the phone; milestone 7 is complete.
 
 ## Parked list
+
+- Weekly reminder flow approved: first ask for day and time in India time, remind privately each week, and send one catch-up reminder when reopened after missing the time. Start fresh with open roles; the Secretary adds speakers and reviews and approves before group posting. Always-on server work is deferred at the user's request.
+- Implementation: `npm start` runs the laptop weekly helper. Setup and reminders use persistent private state and acknowledged messages. START opens a fresh weekly draft while preserving the previous posted board; CANCEL restores it. Approval and selected-time posting share the existing image and delivery checks. All 126 tests pass. The user saved Monday 19:00 India time, authorized a private reminder test without changing that schedule, opened a fresh board and assigned Speaker 1, Evaluator 1 and Timer. Fresh preview, approval and time confirmation verified; the user then authorized immediate delivery and confirmed all three assignments on the Test_group image. Exact approved image and private success acknowledgement verified; restart retained the weekly schedule and sent no duplicate board. Natural future-time posting and a real laptop-off reminder catch-up were not exercised in this repeat; timing and missed-week behavior have automated coverage.
+- Reporting correction: inspect every visible role, list all filled roles, and verify the group image against the exact approved board. The earlier speaker-only report omitted Evaluator 1 and Timer; all three assignments were already correctly saved and posted.
 
 ## EDIT table confirmation
 

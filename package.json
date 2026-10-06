@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node scripts/run-milestone-6.mjs --weekly",
+    "test:whatsapp:weekly": "node scripts/run-milestone-6.mjs --weekly",
     "test": "node --test test/*.test.cjs",
     "deploy": "npx @convex-dev/static-hosting deploy",
     "test:whatsapp": "node scripts/run-milestone-1.mjs",

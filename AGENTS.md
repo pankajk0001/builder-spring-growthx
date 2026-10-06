@@ -22,6 +22,7 @@ When I report a bug, I'll name the part. Look there first, and tell me if you th
 - Never put a key or password in code, in a VITE_ variable (those are sent to every visitor) or in a committed file.
 - When a reply is unclear, instead of guessing the helper should ask the Secretary privately for help.
 - Latest user correction: do not send individual role replies or conflict notes in the group. Only update the table; keep availability checks and holder protection internal.
+- When reporting board updates or checking a posted board, inspect every visible role, not only speakers. Report all filled roles and verify the posted image matches the current approved board.
 
 ## 3. Shipping
 Live link: [.convex.site link]

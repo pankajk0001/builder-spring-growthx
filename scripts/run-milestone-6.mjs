@@ -17,6 +17,8 @@ const {postingDecision}=require('../src/group-posting.cjs');
 const {sendPostConfirmation}=require('../src/post-confirmation.cjs');
 const {verifyRestart}=require('../src/restart-check.cjs');
 const {renderTable}=require('../src/role-board.cjs');
+const {queueReminder,applyWeeklyMessage}=require('../src/weekly.cjs');
+const weeklyMode=process.argv.includes('--weekly');
 const dir=join(homedir(),'.hermes','the-helper'),file=join(dir,'approval-state.json'),lockPath=join(dir,'group-post.lock');
 const target=JSON.parse(await readFile(join(dir,'test-group.json'),'utf8'));
 assert.equal(target.name,'Test_group');
@@ -42,7 +44,7 @@ const {version}=await baileys.fetchLatestBaileysVersion();
 const sock=baileys.makeWASocket({auth,version,logger:pino({level:'silent'}),syncFullHistory:false,markOnlineOnConnect:false,emitOwnEvents:true,shouldIgnoreJid:jid=>jid!==target.groupId&&!isSecretaryChat(jid,{secretaryId,secretaryLid})});
 let credentialWrites=Promise.resolve();sock.ev.on('creds.update',()=>{credentialWrites=credentialWrites.then(saveCreds);});
 const ack=createMessageAckTracker(sock.ev,{secretaryId,secretaryLid,targetGroupId:target.groupId},30000);
-let accepting=false,queue=Promise.resolve(),finish,timer;
+let accepting=false,queue=Promise.resolve(),finish,timer,weeklyTimer;
 const finished=new Promise(resolve=>{finish=resolve;});
 async function flush(){
  while(state.outbox?.length){
@@ -60,15 +62,17 @@ async function flush(){
    await ack.wait(id);
   }
   state.lastReplyMessageId=id;
-  if(state.status==='approved'&&state.postingMode==='correction')state.finalReplyServerAckVerified=true;
+  if(state.status==='approved'&&['correction','weekly'].includes(state.postingMode))state.finalReplyServerAckVerified=true;
   state.outbox.shift();await save();
  }
 }
 async function deliverCorrection(){
- if(state.status!=='approved'||state.postingMode!=='correction')return;
+ if(state.status!=='approved'||!['correction','weekly'].includes(state.postingMode))return;
+ assert.ok(state.board.every(row=>row.member===null||row.member.endsWith(' Example')));
  assert.equal(state.approvedBoardHash,hashOf());
  state.flowVerified=true;await save();
  const decision=postingDecision(state,target,hashOf());
+ if(decision==='wait')return;
  if(decision==='complete'){await sendPostConfirmation({state,secretaryId,socket:sock,acknowledgements:ack,save});return;}
  if(decision==='uncertain'&&!state.groupPost.id)throw Error('Previous correction send is uncertain; check Test_group before retrying.');
  assert.ok(decision==='send'||decision==='uncertain');
@@ -80,7 +84,7 @@ async function deliverCorrection(){
  await ack.wait(state.groupPost.id);
  state.groupPost={...state.groupPost,status:'sent',deliveryReceiptVerified:true,postedAt:new Date().toISOString()};await save();
  await sendPostConfirmation({state,secretaryId,socket:sock,acknowledgements:ack,save});
- status('Corrected approved board delivered to Test_group; private confirmation acknowledged.');
+ status('Approved board delivered to Test_group; private confirmation acknowledged.');
 }
 sock.ev.on('messages.upsert',({type,messages})=>{
  if(!accepting)return;
@@ -88,7 +92,7 @@ sock.ev.on('messages.upsert',({type,messages})=>{
   const command=secretaryCommand({type,message,content:baileys.extractMessageContent(message.message)},{secretaryId,secretaryLid,startedAt:state.editListenerStartedAt,ownIds:new Set(state.ownIds||[])});
   if(!command)continue;
   queue=queue.then(async()=>{
-   const result=applyPostedEditMessage(state,command,hashOf());if(!result.reply)return;
+   const result=weeklyMode?applyWeeklyMessage(state,command):applyPostedEditMessage(state,command,hashOf());if(!result.reply)return;
    state={...result.state,outbox:[...(result.state.outbox||[]),{kind:result.preview?'preview':'text',text:result.reply}]};await save();await flush();
    await deliverCorrection();status('Private edit processed; stage: '+state.status+'.');
   }).catch(()=>{status('Editing or delivery could not be verified; saved state retained. Check Test_group before posting manually.');process.exitCode=1;finish();});
@@ -97,6 +101,10 @@ sock.ev.on('messages.upsert',({type,messages})=>{
 try{
  await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('WhatsApp connection timed out.')),45000);sock.ev.on('connection.update',({connection})=>{if(connection==='open'){clearTimeout(timeout);resolve();}if(connection==='close'){clearTimeout(timeout);reject(Error('WhatsApp connection closed.'));if(accepting){process.exitCode=1;finish();}}});});
  state.ownIds||=[];state.outbox||=[];state.editListenerStartedAt||=Date.now();await save();
+ if(weeklyMode&&!state.weekly?.setupPromptQueued&&!state.weekly?.schedule){
+  state.weekly={setupPromptQueued:true};state.editListenerStartedAt=Date.now();
+  state.outbox.push({kind:'text',text:'Which day and time should I remind you each week to prepare the first role board? Send a day and 24-hour time, for example Monday 19:00 (India time).'});await save();
+ }
  await flush();await deliverCorrection();
  if(process.argv.includes('--restart-check')){
   const before=JSON.parse(await readFile(join(dir,'restart-before.json'),'utf8'));
@@ -106,12 +114,15 @@ try{
   await writeFile(join(dir,'restart-receipt.json'),JSON.stringify({...verified,privateTableAcknowledged:true,checkedAt:new Date().toISOString()},null,2)+'\n',{mode:0o600});
   status('Restart verified: saved board and delivery records unchanged; restored table acknowledged privately.');
  }
- if(!state.postEditGuideSent){
+ if(!weeklyMode&&!state.postEditGuideSent){
   state.outbox.push({text:'Your board is posted in Test_group. Reply TABLE to view the roles as a table, or EDIT if changes are required. Send several corrections together; I will show one new preview and post it only after you reply APPROVE. Reply CANCEL to keep the current posted board.'});await save();await flush();state.postEditGuideSent=true;await save();
  }
- accepting=true;status('Listening for private EDIT. Only Test_group can receive an approved correction.');
- timer=setTimeout(()=>{status('Edit listener paused after 15 minutes; rerun to resume.');finish();},15*60000);
+ accepting=true;status(weeklyMode?'Weekly helper is running. Setup, reminders and drafts stay private; only approved boards go to Test_group.':'Listening for private EDIT. Only Test_group can receive an approved correction.');
+ if(weeklyMode){
+  const tick=()=>{queue=queue.then(async()=>{state=queueReminder(state);await save();await flush();await deliverCorrection();}).catch(error=>{status(error.message);process.exitCode=1;finish();});};
+  tick();weeklyTimer=setInterval(tick,15000);
+ }else timer=setTimeout(()=>{status('Edit listener paused after 15 minutes; rerun to resume.');finish();},15*60000);
  await finished;accepting=false;await queue;
 }catch(error){status(error.message);process.exitCode=1;}
-finally{clearTimeout(timer);accepting=false;sock.end(undefined);await credentialWrites;await lock.close();await unlink(lockPath);}
+finally{clearTimeout(timer);clearInterval(weeklyTimer);accepting=false;sock.end(undefined);await credentialWrites;await lock.close();await unlink(lockPath);}
 process.exit(process.exitCode||0);
