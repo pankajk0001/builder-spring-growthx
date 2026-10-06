@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npx @convex-dev/static-hosting deploy"
+    "test": "node --test test/*.test.cjs",
+    "deploy": "npx @convex-dev/static-hosting deploy",
+    "test:whatsapp": "node scripts/run-milestone-1.mjs"
   },
   "keywords": [],
   "author": "",

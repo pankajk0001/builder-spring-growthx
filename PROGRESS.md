@@ -1,0 +1,1 @@
+2026-10-07 — Milestone 1 confirmed in Test_group using fictional messages: updated table verified, clarification moved to the Secretary's self-chat and confirmed on the phone; 19 Node test entries pass. GitHub push pending: signed-in account has READ access only.

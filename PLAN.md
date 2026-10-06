@@ -1,0 +1,37 @@
+# Plan
+
+Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 approved on 2026-10-07.
+
+## Test boundary and acceptance
+
+- Use only the user's test WhatsApp group named `Test_group`. Never read from or send to the real club group.
+- All test boards, names, and messages must be made up.
+- Clarification questions go privately to the Secretary. For this test, the authorized private destination is the paired account's self-chat; the real club remains excluded.
+- Milestone 1 is complete only when the updated table and the made-up messages it was built from are visible in `Test_group`.
+- Current status: the user confirmed the fictional source and updated table on WhatsApp, then confirmed the private Secretary clarification. The group table was corrected and verified through WhatsApp. Milestone 1 is confirmed; its code is saved locally. GitHub push is pending because the signed-in account has READ access to the configured repository.
+- The runner limits input to 300 fictional messages, requests `max_output_tokens: 500`, and permits at most 100 AI requests per rolling hour through a locked laptop ledger. It reserves a conservative API-equivalent budget of at most $5; Codex subscription allowance is governed by the signed-in account, not by an API provider spending limit.
+- Verification: all 15 Node test entries pass, including four Python checks for persistent rate and budget limits. The live WhatsApp test passed; re-running it confirmed that a completed test does not post duplicates.
+- Correction verified: the group table was edited to remove the Secretary clarification, and the user confirmed receiving the private clarification in self-chat. All 19 Node test entries now pass, including checks for private routing and send receipts.
+
+## Milestones
+
+- [x] 1. Read WhatsApp chatter and the current role board, then show the updated board in a table (verified with made-up data in Test_group).
+- [ ] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom.
+- [ ] 3. Generate the role board as an image with the same layout and every name in the correct slot.
+- [ ] 4. Get the Secretary's approval to post the board at the time they select.
+- [ ] 5. Post the board in the WhatsApp group.
+- [ ] 6. Let the Secretary edit a role on the board.
+- [ ] 7. Close and reopen the helper, and confirm the board is still there.
+
+## Milestone 1 approach
+
+- Inspect the existing Hermes setup on the laptop and its WhatsApp connection.
+- Read the current board and up to 300 messages through Hermes, and identify role changes using the AI settings in AGENTS.md.
+- Preserve existing assignments when someone else requests a filled role. Ask the Secretary for help when a reply is unclear.
+- Return the updated board as a text table in WhatsApp, without generating or posting a board image yet.
+- Enforce the AI call and reply limits on the laptop, keep credentials out of code, and return the retry message when a call fails or a cap is reached.
+- Use only made-up names and messages in tests. Check assignments, withdrawals, unrelated chatter, conflicting requests, and unclear replies.
+- Verify the flow in a test WhatsApp group and explain how to check it on a phone before requesting milestone confirmation.
+- After the user confirms it works, commit, push, update PROGRESS.md, and deploy as required by AGENTS.md.
+
+## Parked list
