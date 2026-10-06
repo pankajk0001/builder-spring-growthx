@@ -7,7 +7,8 @@ import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url);
 const {renderBoardImage}=require('../src/board-image.cjs');
-const {sendPrivateBoardPreview,sendTestGroupBoard}=require('../src/preview-delivery.cjs');
+const {sendTestGroupBoard}=require('../src/preview-delivery.cjs');
+const {deliverPreviewOnce}=require('../src/preview-outbox.cjs');
 const {assertPrivateSendReceipt}=require('../src/note-delivery.cjs');
 const {createMessageAckTracker}=require('../src/message-ack.cjs');
 const {secretaryCommand,isSecretaryChat}=require('../src/approval-inbox.cjs');
@@ -44,20 +45,19 @@ const finished=new Promise(resolve=>{finish=resolve;});
 async function flush(){
  while(state.outbox?.length){
   const item=state.outbox[0];let id=item.sentId;
-  if(!id){
-   if(item.kind==='preview'){
-    const rendered=renderBoardImage(state);assert.equal(hashOf(),state.boardHash);
-    const sent=await sendPrivateBoardPreview(sock,secretaryId,rendered.png,'the helper — CORRECTED BOARD PREVIEW\n'+item.text);
-    state.previewReceipt=sent;id=sent.id;
-   }else{
+  if(item.kind==='preview'){
+   id=await deliverPreviewOnce({state,item,socket:sock,secretaryId,png:renderBoardImage(state).png,
+    caption:'the helper — CORRECTED BOARD PREVIEW\n'+item.text,acknowledgements:ack,save});
+  }else{
+   if(!id){
     const text='the helper — BOARD EDIT\n'+item.text;
     const sent=await sock.sendMessage(secretaryId,{text});assertPrivateSendReceipt(sent,secretaryId);
     assert.equal(sent.message?.conversation??sent.message?.extendedTextMessage?.text,text);id=sent.key.id;
+    item.sentId=id;state.ownIds.push(id);await save();
    }
-   item.sentId=id;state.ownIds.push(id);await save();
+   await ack.wait(id);
   }
-  await ack.wait(id);state.lastReplyMessageId=id;
-  if(item.kind==='preview')state.lastPreviewServerAckVerified=true;
+  state.lastReplyMessageId=id;
   if(state.status==='approved'&&state.postingMode==='correction')state.finalReplyServerAckVerified=true;
   state.outbox.shift();await save();
  }

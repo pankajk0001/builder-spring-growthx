@@ -139,4 +139,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Images explicitly show evaluator numbers; the text table and later corrections use the same numbering. Batched removals refer to the starting preview; a later new speaker is appended using the next number.
 - All 102 tests pass. Visually checked the renumbered fictional draft and refreshed its private preview; fresh phone approval is still required before group posting.
 
+## Duplicate preview correction
+
+- User reported two previews. The numbering update was manually refreshed twice, once for speakers and once for explicit evaluator labels; combine related changes before sending future previews.
+- The private edit runner now saves preview delivery by image checksum, reuses acknowledged receipts for the same image, and checks uncertain receipts without automatically resending.
+- All 108 tests pass. Live restart check queued two identical current previews and verified both were cleared using the existing acknowledged receipt, with zero new WhatsApp messages. Fresh corrected-board approval still awaits the phone.
+
 ## Parked list
