@@ -23,7 +23,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 4. Get the Secretary's approval to post the board at the time they select (confirmed in Secretary self-chat).
 - [x] 5. Post the board in the WhatsApp group (approved fictional image delivered to Test_group and confirmed on the phone).
 - [x] 6. Let the Secretary edit a role on the board (private table, corrections, preview, approval, Test_group delivery and private confirmation checked on the phone).
-- [ ] 7. Close and reopen the helper, and confirm the board is still there.
+- [x] 7. Close and reopen the helper, and confirm the board is still there (restored private table confirmed on the phone).
 
 ## Milestone 1 approach
 
@@ -161,6 +161,6 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 - User requested the next milestone. Closed the active helper, saved a private restart snapshot and reopened it in a new process.
 - Verified saved role holders, meeting details, removals, consecutive numbering, image checksum, approval and delivery records. Existing group post and private success receipt were reused; no group image was resent.
-- All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Awaiting the user’s phone confirmation before marking milestone 7 complete.
+- All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Repeated the restart check and the user confirmed the restored roles and names on the phone; milestone 7 is complete.
 
 ## Parked list
