@@ -1,9 +1,10 @@
 const { validateInput, updateBoard } = require('./role-board.cjs');
+const { renumberSpeakerPairs } = require('./speaker-numbering.cjs');
 
 function respondToRoles(board, messages, decisions) {
   validateInput(board, messages);
   if (!Array.isArray(decisions) || decisions.length !== messages.length) throw new Error('Every message needs exactly one decision.');
-  let current = board.map(row => ({ ...row }));
+  let current = renumberSpeakerPairs(board);
   const replies = [], notes = [];
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i], decision = decisions[i];

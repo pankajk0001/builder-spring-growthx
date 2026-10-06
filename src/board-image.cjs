@@ -1,6 +1,7 @@
 const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const { join } = require('node:path');
 const { validateInput } = require('./role-board.cjs');
+const { renumberSpeakerPairs } = require('./speaker-numbering.cjs');
 
 if (!GlobalFonts.registerFromPath(join(__dirname, '../assets/fonts/InterVariable.ttf'), 'Board Inter')) {
   throw new Error('The board font could not be loaded.');
@@ -43,6 +44,7 @@ function wrap(ctx, text, width) {
 }
 
 function renderBoardImage({ board, meeting }) {
+  board = renumberSpeakerPairs(board);
   validateInput(board, []);
   for (const field of ['club', 'number', 'date', 'time', 'badge']) {
     if (typeof meeting?.[field] !== 'string' || !meeting[field].trim()) throw new Error(`Meeting ${field} is required.`);
@@ -68,7 +70,7 @@ function renderBoardImage({ board, meeting }) {
     if (row.section) return { ...row, height: row.detail ? 40 : 32 };
     useFont(measure, 17);
     const lines = wrap(measure, holders.get(row.role), nameWidth);
-    const evaluatorLines = row.evaluator ? wrap(measure, `Evaluator (2–3 Minutes): ${holders.get(row.evaluator)}`, nameWidth) : [];
+    const evaluatorLines = row.evaluator ? wrap(measure, `${row.evaluator} (2–3 Minutes): ${holders.get(row.evaluator)}`, nameWidth) : [];
     useFont(measure, 16, true);
     const labelLines = wrap(measure, row.label, SPLIT - 24);
     const nameHeight = (lines.length + evaluatorLines.length) * 23 + (row.evaluator ? 12 : 0);

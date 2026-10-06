@@ -66,7 +66,7 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
   if (command === 'edit') {
     return { state: { ...next, status: 'awaiting_edit', postAt: null, approvedBoardHash: null, approvedAt: null,
       finalReplyServerAckVerified: false, flowVerified: false, pendingEdits: null },
-      reply: 'What would you like to change?\nSend all corrections in one message, one per line. For example:\nTimer: Zara Example\nListener: Finn Example\n\nUse Open to reopen a role. Use Speaker 2: Remove to hide Speaker 2 and Evaluator 2. Assign a new Speaker 2 to restore the pair. You can also change Club, Meeting number, Meeting date, or Meeting time.' };
+      reply: 'What would you like to change?\nSend all corrections in one message, one per line. For example:\nTimer: Zara Example\nListener: Finn Example\n\nUse Open to reopen a role. Use Speaker 2: Remove to hide Speaker 2 and Evaluator 2. Remaining speakers and evaluators are renumbered. Assign the next speaker number to add a new pair. You can also change Club, Meeting number, Meeting date, or Meeting time.' };
   }
   if (state.status === 'awaiting_edit') {
     const { editBoard } = require('./board-edit.cjs');

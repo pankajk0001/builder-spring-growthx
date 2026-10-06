@@ -35,7 +35,7 @@ test('a duplicate-holder preview saved by an older version cannot be approved',(
 });
 test('removed speaker pair survives preview approval without becoming Open',()=>{
  let s=send(start(),'EDIT').state;const result=send(s,'Speaker 2: Remove');assert.equal(result.preview,true);s=result.state;
- assert.ok(!renderBoardImage(s).cells.some(c=>['Speaker 2','Evaluator 2'].includes(c.role)));
- const approved=send(s,'APPROVE');assert.equal(approved.state.status,'approved');assert.equal(approved.state.board.find(r=>r.role==='Speaker 2').removed,true);
+ assert.ok(!renderBoardImage(s).cells.some(c=>['Speaker 3','Evaluator 3'].includes(c.role)));
+ const approved=send(s,'APPROVE');assert.equal(approved.state.status,'approved');assert.equal(approved.state.board.find(r=>r.role==='Speaker 3').removed,true);
  const cancelled=send(s,'CANCEL');assert.equal(cancelled.state.board.find(r=>r.role==='Speaker 2').removed,undefined);
 });

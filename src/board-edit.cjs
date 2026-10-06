@@ -1,6 +1,7 @@
 const { validateInput } = require('./role-board.cjs');
 const { sentenceCorrections } = require('./correction-sentences.cjs');
 const { duplicateRoleHolders } = require('./role-uniqueness.cjs');
+const { renumberSpeakerPairs } = require('./speaker-numbering.cjs');
 
 function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   validateInput(board, []);
@@ -56,6 +57,7 @@ function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   return { ...updated, changedField: field, fieldId: `meeting:${key}` };
 }
 function editBoard(input, text, options = {}) {
+  input = { ...input, board: renumberSpeakerPairs(input.board) };
   if (typeof text !== 'string' || text.length > 10000) throw new Error('Send corrections in a shorter message.');
   const corrections = [...new Set(text.split(/[\r\n;]+/).map(line => line.trim()).filter(Boolean))];
   if (!corrections.length || corrections.length > 25) throw new Error('Send between 1 and 25 corrections, one per line.');
@@ -113,6 +115,6 @@ function editBoard(input, text, options = {}) {
     error.validCorrections = validCorrections.filter(line => !conflictingLines.has(line));
     throw error;
   }
-  return { ...current, changedFields, changedField: changedFields.join(', ') };
+  return { ...current, board: renumberSpeakerPairs(current.board), changedFields, changedField: changedFields.join(', ') };
 }
 module.exports = { editBoard };

@@ -129,8 +129,14 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 ## Removing a speaker slot
 
-- User requested removal rather than showing an open slot, and explicitly chose to hide the paired evaluator too. Speaker 2: Remove hides both slots from the table and image; assigning a new Speaker 2 restores the pair with its evaluator open.
-- Group chatter cannot reactivate removed slots. Removing all speakers hides that section; existing slot numbers stay stable. Cancel and fresh approval use the same private edit flow.
+- User requested removal rather than showing an open slot, and explicitly chose to hide the paired evaluator too. Speaker 2: Remove hides both slots from the table and image; assigning the next numbered speaker adds a new pair with its evaluator open.
+- Group chatter cannot reactivate removed slots. Removing all speakers hides that section; remaining speaker/evaluator pairs are renumbered consecutively. Cancel and fresh approval use the same private edit flow.
 - All 99 tests pass. Visually checked a fictional square board with Speaker 2 and Evaluator 2 absent. Reloaded the private listener and delivered removal instructions; live removal preview and corrected group delivery await the phone check.
+
+## Consecutive speaker and evaluator numbers
+
+- User requested consecutive numbering after a removal. Surviving pairs keep their holders together and shift up, so removing Speaker 2 moves the old Speaker 3 and Evaluator 3 to number 2.
+- Images explicitly show evaluator numbers; the text table and later corrections use the same numbering. Batched removals refer to the starting preview; a later new speaker is appended using the next number.
+- All 102 tests pass. Visually checked the renumbered fictional draft and refreshed its private preview; fresh phone approval is still required before group posting.
 
 ## Parked list

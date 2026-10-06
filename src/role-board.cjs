@@ -1,3 +1,4 @@
+const { renumberSpeakerPairs } = require('./speaker-numbering.cjs');
 const RETRY_MESSAGE = 'Please try again in a few minutes.';
 
 function validateInput(board, messages) {
@@ -33,7 +34,7 @@ function updateBoard(board, messages, decisions) {
   if (!Array.isArray(decisions) || decisions.length !== messages.length) {
     throw new Error('Every message needs exactly one decision.');
   }
-  const updated = board.map(row => ({ ...row }));
+  const updated = renumberSpeakerPairs(board);
   const notes = [];
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
@@ -72,7 +73,7 @@ function safeCell(value) {
 }
 
 function renderTable(board) {
-  const rows = board.filter(row => !row.removed).map(row => [safeCell(row.role), row.member === null ? 'Open' : safeCell(row.member)]);
+  const rows = renumberSpeakerPairs(board).filter(row => !row.removed).map(row => [safeCell(row.role), row.member === null ? 'Open' : safeCell(row.member)]);
   const width = Math.max(4, ...rows.map(row => row[0].length));
   return '```\n' + ['Role'.padEnd(width) + ' | Member', '-'.repeat(width) + '-|-------',
     ...rows.map(([role, member]) => role.padEnd(width) + ' | ' + member)].join('\n') + '\n```';
