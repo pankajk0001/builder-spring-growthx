@@ -36,6 +36,10 @@ This is a bounded test run, not an always-on listener. Completed runs do not sen
 
 Run `node scripts/run-milestone-2.mjs --mixed-chatter` for a separate fictional conversation mixing five everyday messages with six role-related messages. The live AI check must ignore all five everyday messages, including unrelated uses of “timer” and “listener,” while producing the same role replies and final board. This uses realistic invented chatter, not real club conversations.
 
+Run `node scripts/run-milestone-2.mjs --long-chatter` for exactly 60 invented messages: 48 everyday messages and 12 role-related messages, including conflicts and withdrawals. The runner posts the source conversation in Test_group, reads it back, then interprets six batches of ten through Hermes. Each batch sees the board updated by preceding batches and uses the same rate, budget, and 500-output-token limits. Saved interpretation batches let retries resume without repeating completed calls.
+
+The expected final board is Timer: Mira Example, Listener: Lena Example, Grammarian: Iris Example. There should be eleven group replies, no replies to everyday chatter, and one unclear-message clarification only in Secretary self-chat.
+
 ## Limits and local state
 
 The runner accepts fictional data only, limits input to 300 messages, requests a maximum of 500 output tokens, disables request retries, and records at most 100 requests per rolling hour in a locked laptop file. Its $5 local guard reserves a conservative API-equivalent estimate; Codex subscription allowance is controlled by the signed-in account, rather than an API billing limit.

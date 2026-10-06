@@ -68,3 +68,20 @@ test('mixed everyday chatter does not change roles or produce replies', () => {
   assert.ok(result.replies.every(reply => !mixed.chatterIds.includes(reply.messageId)));
   assert.deepEqual(result.notes.map(note => note.kind), ['clarify']);
 });
+test('60-message conversation preserves holders through chatter, claims, and withdrawals', () => {
+  const fixture = require('./fixtures/long-chatter.cjs');
+  assert.equal(fixture.messages.length, 60);
+  assert.equal(fixture.chatterIds.length, 48);
+  let current = fixture.board;
+  const replies = [], notes = [];
+  for (let i = 0; i < 60; i += 10) {
+    const result = respondToRoles(current, fixture.messages.slice(i, i + 10), fixture.decisions.slice(i, i + 10));
+    current = result.board;
+    replies.push(...result.replies);
+    notes.push(...result.notes);
+  }
+  assert.deepEqual(current, fixture.expected);
+  assert.deepEqual(replies.map(reply => reply.text), fixture.expectedReplies);
+  assert.deepEqual(notes.map(note => note.kind), ['clarify']);
+  assert.ok(replies.every(reply => !fixture.chatterIds.includes(reply.messageId)));
+});

@@ -50,4 +50,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Live Hermes interpretation ignored all five everyday messages, including unrelated mentions of timer and listener; five correct role replies and the unchanged expected final board were posted and read back. The unclear request was sent privately to Secretary self-chat.
 - All 28 automated tests pass. Awaiting the user's phone check before pushing this additional checkpoint.
 
+## 60-message milestone 2 check
+
+- User requested a longer conversation; generated exactly 60 fictional messages (48 everyday messages and 12 role-related messages).
+- Posted the source transcript in Test_group and verified its readback. Six live Hermes calls interpreted ten messages each, carrying the updated board forward while retaining all existing call and reply limits.
+- Verified all 48 chatter messages were ignored, eleven correct role replies, and the final board: Timer Mira Example, Listener Lena Example, Grammarian Iris Example. WhatsApp confirmed the unclear request was sent only to Secretary self-chat.
+- All 29 automated tests pass. Awaiting the user's phone confirmation before pushing this additional checkpoint.
+
 ## Parked list

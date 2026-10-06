@@ -11,14 +11,15 @@ const { renderTable } = require('../src/role-board.cjs');
 const { interpretFictionalMessages } = require('../src/hermes-intent.cjs');
 const { buildBoardDelivery, assertTestDestination, assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
 const mixedChatter = process.argv.includes('--mixed-chatter');
-const fixture = require(mixedChatter ? '../test/fixtures/mixed-chatter.cjs' : '../test/fixtures/milestone-2.cjs');
+const longChatter = process.argv.includes('--long-chatter');
+const fixture = require(longChatter ? '../test/fixtures/long-chatter.cjs' : mixedChatter ? '../test/fixtures/mixed-chatter.cjs' : '../test/fixtures/milestone-2.cjs');
 const { respondToRoles } = require('../src/role-availability.cjs');
 const stateDir = join(homedir(), '.hermes', 'the-helper');
 const target = JSON.parse(await readFile(join(stateDir, 'test-group.json'), 'utf8'));
 if (target.name !== 'Test_group' || !/^\d+(?:-\d+)?@g\.us$/.test(target.groupId)) {
   throw new Error('The Test_group destination is not configured.');
 }
-const receiptPath = join(stateDir, mixedChatter ? 'mixed-chatter-receipt.json' : 'milestone-2-receipt.json');
+const receiptPath = join(stateDir, longChatter ? 'long-chatter-receipt.json' : mixedChatter ? 'mixed-chatter-receipt.json' : 'milestone-2-receipt.json');
 let previous;
 try {
   previous = JSON.parse(await readFile(receiptPath, 'utf8'));
@@ -107,12 +108,28 @@ try {
   const input = parseSource(receipt.sourceText);
   assert.deepEqual(input.board, fixture.board);
   assert.deepEqual(input.messages, fixture.messages);
-  if (!receipt.interpretation) {
+  if (longChatter) {
+    // Ten messages per call keep each reply within the existing 500-token cap.
+    // Every later batch sees the board resulting from all preceding messages.
+    receipt.interpretation ||= { decisions: [] };
+    while (receipt.interpretation.decisions.length < input.messages.length) {
+      const start = receipt.interpretation.decisions.length;
+      const current = respondToRoles(input.board, input.messages.slice(0, start), receipt.interpretation.decisions).board;
+      const messages = input.messages.slice(start, start + 10);
+      const interpreted = await interpretFictionalMessages(current, messages, 'availability');
+      respondToRoles(current, messages, interpreted.decisions);
+      receipt.interpretation.decisions.push(...interpreted.decisions);
+      receipt.interpretation.model = interpreted.model;
+      receipt.interpretation.provider = interpreted.provider;
+      await save();
+      status(`Interpreted ${receipt.interpretation.decisions.length} of 60 fictional messages.`);
+    }
+  } else if (!receipt.interpretation) {
     receipt.interpretation = await interpretFictionalMessages(input.board, input.messages, 'availability');
     await save();
   }
   const result = respondToRoles(input.board, input.messages, receipt.interpretation.decisions);
-  if (mixedChatter) {
+  if (mixedChatter || longChatter) {
     const chatter = receipt.interpretation.decisions.filter(decision => fixture.chatterIds.includes(decision.messageId));
     assert.equal(chatter.length, fixture.chatterIds.length);
     assert.ok(chatter.every(decision => decision.intent === 'ignore'), 'Every unrelated chatter message must be ignored.');
@@ -142,8 +159,8 @@ try {
   receipt.board = result.board;
   receipt.verifiedAt = new Date().toISOString();
   await save();
-  status('Verified all five availability replies and the final table in Test_group.');
-  if (mixedChatter) status('Verified that all five everyday chatter messages were ignored, including unrelated mentions of timer and listener.');
+  status(`Verified all ${result.replies.length} role replies and the final table in Test_group.`);
+  if (mixedChatter || longChatter) status(`Verified that all ${fixture.chatterIds.length} everyday chatter messages were ignored, including unrelated mentions of timer and listener.`);
   status('WhatsApp confirmed the unclear-message clarification was sent privately to Secretary self-chat.');
   status(renderTable(result.board));
 } catch (error) {
