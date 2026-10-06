@@ -34,4 +34,13 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Verify the flow in a test WhatsApp group and explain how to check it on a phone before requesting milestone confirmation.
 - After the user confirms it works, commit, push, update PROGRESS.md, and deploy as required by AGENTS.md.
 
+## Milestone 2 approach
+
+- Approved by the user on 2026-10-07. All 27 tests pass; five role replies and the final table were posted and read back in Test_group. WhatsApp confirmed the private clarification send. Awaiting the user’s phone confirmation before marking milestone 2 complete or pushing.
+- Reply with the current holder for filled roles; never replace them.
+- Answer availability questions without assigning a role. An explicit claim or bare role name takes an open role.
+- Apply requests in message order so later requests see earlier assignments.
+- Keep unclear-role questions in the Secretary's self-chat.
+- Prove the flow using six fictional messages, five group replies, and a final table in Test_group; ask the user to check the phone before marking it complete.
+
 ## Parked list

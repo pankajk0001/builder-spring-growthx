@@ -59,6 +59,15 @@ def main():
     ) or any(row.get('member') is not None and not row['member'].endswith(' Example') for row in payload['board']):
         raise ValueError('This milestone runner accepts fictional test data only.')
     prompt = json.dumps({'board': payload['board'], 'messages': messages})
+    instructions = INSTRUCTIONS
+    if payload.get('task') == 'availability':
+        instructions = INSTRUCTIONS.replace('take|drop|ignore|clarify', 'check|take|drop|ignore|clarify') + '''
+check means a question about whether a named role is available or who holds it;
+it must not assign that role. A bare exact role name means a request to take it.
+Match role names ignoring case and extra whitespace, but return exact board spelling.
+An unclear or unknown role needs clarify. Do not invent a board role.'''
+    elif payload.get('task', 'update') != 'update':
+        raise ValueError('Unknown role-board task.')
 
     from hermes_cli.runtime_provider import resolve_runtime_provider
     from agent.codex_headers import codex_cloudflare_headers, is_official_codex_base_url
@@ -67,11 +76,11 @@ def main():
     runtime = resolve_runtime_provider(requested=PROVIDER, target_model=MODEL)
     if runtime.get('provider') != PROVIDER or not is_official_codex_base_url(runtime.get('base_url')):
         raise ValueError('The selected Hermes Codex provider is not configured.')
-    reserve_call(prompt)
+    reserve_call(prompt + instructions)
     with OpenAI(api_key=runtime['api_key'], base_url=runtime['base_url'], max_retries=0,
                 timeout=45, default_headers=codex_cloudflare_headers(runtime['api_key'])) as client:
         stream = client.responses.create(
-            model=MODEL, instructions=INSTRUCTIONS,
+            model=MODEL, instructions=instructions,
             input=[{'role': 'user', 'content': prompt}],
             reasoning={'effort': 'low'}, max_output_tokens=MAX_OUTPUT,
             store=False, stream=True,

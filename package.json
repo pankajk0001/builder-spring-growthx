@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test test/*.test.cjs",
     "deploy": "npx @convex-dev/static-hosting deploy",
-    "test:whatsapp": "node scripts/run-milestone-1.mjs"
+    "test:whatsapp": "node scripts/run-milestone-1.mjs",
+    "test:whatsapp:roles": "node scripts/run-milestone-2.mjs"
   },
   "keywords": [],
   "author": "",

@@ -26,6 +26,14 @@ The runner checks the group's name before every group send. It posts a fictional
 
 On a phone using mobile data, open Test_group and find `the helper — MADE-UP TEST` followed by `the helper — UPDATED TEST BOARD`. The expected assignments are Timer: Mira Example, Grammarian: Noel Example, Ah Counter: Iris Example, and Listener: Open. The group note preserves the filled Timer role. In self-chat, find `the helper — PRIVATE TEST CLARIFICATION`, which quotes Lena Example's unclear made-up reply and asks the Secretary for help.
 
+## Check role availability (milestone 2)
+
+Run `npm run test:whatsapp:roles` to post six fictional role messages in Test_group, interpret them through Hermes, and reply using the current board. Availability questions do not claim a role; explicit claims and bare role names fill open roles. A filled role keeps its existing holder, including when another person asks for it. Requests are processed in order.
+
+On your phone, find five `the helper — ROLE CHECK TEST` replies: Listener starts open, Timer belongs to Mira Example, Iris Example gets Listener, a later Listener request names Iris, and the Timer question still names Mira. The final table keeps Grammarian open. The unclear “that one” message goes privately to the Secretary's self-chat. All examples are fictional.
+
+This is a bounded test run, not an always-on listener. Completed runs do not send duplicate messages, and intermediate receipts let a retry resume after confirmed sends.
+
 ## Limits and local state
 
 The runner accepts fictional data only, limits input to 300 messages, requests a maximum of 500 output tokens, disables request retries, and records at most 100 requests per rolling hour in a locked laptop file. Its $5 local guard reserves a conservative API-equivalent estimate; Codex subscription allowance is controlled by the signed-in account, rather than an API billing limit.

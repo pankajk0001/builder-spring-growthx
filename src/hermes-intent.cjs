@@ -16,7 +16,7 @@ async function getHermesRuntimeCommand(script) {
   return [binary, ...args];
 }
 
-async function interpretFictionalMessages(board, messages) {
+async function interpretFictionalMessages(board, messages, task = 'update') {
   validateInput(board, messages);
   const script = resolve(__dirname, '../scripts/hermes-intent.py');
   const [binary, ...args] = await getHermesRuntimeCommand(script);
@@ -27,7 +27,7 @@ async function interpretFictionalMessages(board, messages) {
       if (error || result.error) return reject(new Error(result.error || 'Hermes AI call failed.'));
       resolveResult(result);
     });
-    child.stdin.end(JSON.stringify({ testOnly: true, board, messages }));
+    child.stdin.end(JSON.stringify({ testOnly: true, board, messages, task }));
   });
 }
 
