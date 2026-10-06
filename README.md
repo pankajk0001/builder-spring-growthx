@@ -32,4 +32,4 @@ The runner accepts fictional data only, limits input to 300 messages, requests a
 
 Hermes sign-in credentials, WhatsApp session files, the group ID, usage ledger, and delivery receipt stay outside this repository under `~/.hermes/`. Never copy them into git.
 
-Milestone 1 was posted and checked through WhatsApp, and the user confirmed the table and private clarification on a phone. GitHub push is pending write access to the configured repository. This milestone runs through Hermes on the laptop; it has no static frontend to deploy.
+Milestone 1 was posted and checked through WhatsApp, and the user confirmed the table and private clarification on a phone. The code is saved in the GitHub repository `pankajk0001/builder-spring-growthx`. This milestone runs through Hermes on the laptop; it has no static frontend to deploy.
