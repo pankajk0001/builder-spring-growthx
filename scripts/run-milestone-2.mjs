@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const { renderSource, parseSource } = require('../src/test-transcript.cjs');
 const { renderTable } = require('../src/role-board.cjs');
 const { interpretFictionalMessages } = require('../src/hermes-intent.cjs');
-const { buildBoardDelivery, assertTestDestination, assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
+const { buildBoardDelivery, assertTestDestination, assertPrivateSendReceipt, assertTableOnlyGroupMessages } = require('../src/note-delivery.cjs');
 const mixedChatter = process.argv.includes('--mixed-chatter');
 const longChatter = process.argv.includes('--long-chatter');
 const fixture = require(longChatter ? '../test/fixtures/long-chatter.cjs' : mixedChatter ? '../test/fixtures/mixed-chatter.cjs' : '../test/fixtures/milestone-2.cjs');
@@ -19,7 +19,7 @@ const target = JSON.parse(await readFile(join(stateDir, 'test-group.json'), 'utf
 if (target.name !== 'Test_group' || !/^\d+(?:-\d+)?@g\.us$/.test(target.groupId)) {
   throw new Error('The Test_group destination is not configured.');
 }
-const receiptPath = join(stateDir, longChatter ? 'long-chatter-receipt.json' : mixedChatter ? 'mixed-chatter-receipt.json' : 'milestone-2-receipt.json');
+const receiptPath = join(stateDir, longChatter ? 'long-chatter-table-only-receipt.json' : mixedChatter ? 'mixed-chatter-table-only-receipt.json' : 'milestone-2-table-only-receipt.json');
 let previous;
 try {
   previous = JSON.parse(await readFile(receiptPath, 'utf8'));
@@ -51,6 +51,7 @@ const sock = baileys.makeWASocket({
 });
 sock.ev.on('creds.update', saveCreds);
 const echoes = new Map();
+const sentGroupTexts = [];
 sock.ev.on('messages.upsert', ({ messages }) => {
   for (const message of messages) {
     if (message.key.remoteJid === target.groupId && message.key.fromMe) {
@@ -86,6 +87,7 @@ async function sendVerified(text, destination = target.groupId, editMessageId = 
   const content = normalized?.protocolMessage?.editedMessage || normalized;
   const receivedText = content?.conversation ?? content?.extendedTextMessage?.text;
   if (receivedText !== text) throw new Error('The sent message could not be verified in the test-group event stream.');
+  sentGroupTexts.push(receivedText);
   return { id: sent.key.id, text: receivedText };
 }
 
@@ -138,20 +140,14 @@ try {
   assert.deepEqual(result.replies.map(reply => reply.text), fixture.expectedReplies);
   assert.deepEqual(result.notes.map(note => note.kind), ['clarify']);
   const delivery = buildBoardDelivery(result, input.messages);
-  receipt.replyMessageIds ||= [];
-  for (let i = receipt.replyMessageIds.length; i < result.replies.length; i++) {
-    const reply = result.replies[i];
-    const source = input.messages.find(message => message.id === reply.messageId);
-    const sent = await sendVerified(`the helper — ROLE CHECK TEST\nMade-up message from ${source.sender}: “${source.text}”\n\n${reply.text}`);
-    receipt.replyMessageIds.push(sent.id);
-    await save();
-  }
   if (delivery.secretaryText && !receipt.privateMessageId) {
     receipt.privateMessageId = (await sendVerified(delivery.secretaryText, secretaryId)).id;
     await save();
   }
   if (!receipt.tableMessageId) {
     receipt.tableMessageId = (await sendVerified(delivery.groupText)).id;
+    assertTableOnlyGroupMessages(sentGroupTexts, receipt.sourceText, delivery.groupText);
+    receipt.tableOnlyVerified = true;
     await save();
   }
   receipt.completed = true;
@@ -159,7 +155,7 @@ try {
   receipt.board = result.board;
   receipt.verifiedAt = new Date().toISOString();
   await save();
-  status(`Verified all ${result.replies.length} role replies and the final table in Test_group.`);
+  status('Verified that the only group output was the updated table; no role replies were sent.');
   if (mixedChatter || longChatter) status(`Verified that all ${fixture.chatterIds.length} everyday chatter messages were ignored, including unrelated mentions of timer and listener.`);
   status('WhatsApp confirmed the unclear-message clarification was sent privately to Secretary self-chat.');
   status(renderTable(result.board));

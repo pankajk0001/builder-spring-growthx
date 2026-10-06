@@ -20,7 +20,8 @@ When I report a bug, I'll name the part. Look there first, and tell me if you th
 - Build and test only in WhatsApp. No web test page for a product that lives somewhere else.
 - After I confirm a milestone works: commit, push, and add one line to PROGRESS.md.
 - Never put a key or password in code, in a VITE_ variable (those are sent to every visitor) or in a committed file.
-- When a reply is unclear, instead of guessing the helper should ask the Secretary for the help.
+- When a reply is unclear, instead of guessing the helper should ask the Secretary privately for help.
+- Latest user correction: do not send individual role replies or conflict notes in the group. Only update the table; keep availability checks and holder protection internal.
 
 ## 3. Shipping
 Live link: [.convex.site link]

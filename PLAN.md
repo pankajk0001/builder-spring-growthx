@@ -4,6 +4,8 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 ## Test boundary and acceptance
 
+- Latest user correction overrides earlier reply examples: only update the group table, without individual role replies or public conflict notes. Unclear questions remain private to the Secretary.
+
 - Use only the user's test WhatsApp group named `Test_group`. Never read from or send to the real club group.
 - All test boards, names, and messages must be made up.
 - Clarification questions go privately to the Secretary. For this test, the authorized private destination is the paired account's self-chat; the real club remains excluded.
@@ -56,5 +58,12 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Posted the source transcript in Test_group and verified its readback. Six live Hermes calls interpreted ten messages each, carrying the updated board forward while retaining all existing call and reply limits.
 - Verified all 48 chatter messages were ignored, eleven correct role replies, and the final board: Timer Mira Example, Listener Lena Example, Grammarian Iris Example. WhatsApp confirmed the unclear request was sent only to Secretary self-chat.
 - All 29 automated tests pass. The user confirmed the final table and private clarification on the phone; this additional checkpoint is ready to push.
+
+## Table-only correction check
+
+- User requested no individual role replies, only the updated table.
+- Removed public conflict notes and per-message group sends; retained holder protection, withdrawals, availability checks, and private Secretary clarification.
+- Replayed all 60 fictional messages through six live Hermes calls. Recorded the actual group sends and verified exactly one final table after the source transcript, with no role replies. All 48 everyday messages were ignored; final holders remained Timer Mira Example, Listener Lena Example, Grammarian Iris Example. WhatsApp confirmed private clarification delivery.
+- All 31 tests pass, including checks that extra replies or duplicate tables fail verification. Awaiting the user's phone check before pushing this correction.
 
 ## Parked list

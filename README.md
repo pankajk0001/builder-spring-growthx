@@ -24,21 +24,21 @@ The lookup reads group names and IDs, never other groups' messages. It saves onl
 
 The runner checks the group's name before every group send. It posts a fictional current board and six fictional messages, reads its own posted source from the WhatsApp event stream, sends that source to Hermes for interpretation, and posts the verified updated table. Unclear-reply questions go privately to the Secretary's authorized test inbox: the paired account's self-chat. Private sends are checked through WhatsApp send receipts and a phone check; they do not require a group-stream echo. It does not generate a board image or start automatic replies. Re-running after a completed test does not send duplicates.
 
-On a phone using mobile data, open Test_group and find `the helper — MADE-UP TEST` followed by `the helper — UPDATED TEST BOARD`. The expected assignments are Timer: Mira Example, Grammarian: Noel Example, Ah Counter: Iris Example, and Listener: Open. The group note preserves the filled Timer role. In self-chat, find `the helper — PRIVATE TEST CLARIFICATION`, which quotes Lena Example's unclear made-up reply and asks the Secretary for help.
+On a phone using mobile data, open Test_group and find `the helper — MADE-UP TEST` followed by the updated table. The expected assignments are Timer: Mira Example, Grammarian: Noel Example, Ah Counter: Iris Example, and Listener: Open. The table preserves the filled Timer role without a group reply. In self-chat, find `the helper — PRIVATE TEST CLARIFICATION`, which quotes Lena Example's unclear made-up reply and asks the Secretary for help.
 
 ## Check role availability (milestone 2)
 
-Run `npm run test:whatsapp:roles` to post six fictional role messages in Test_group, interpret them through Hermes, and reply using the current board. Availability questions do not claim a role; explicit claims and bare role names fill open roles. A filled role keeps its existing holder, including when another person asks for it. Requests are processed in order.
+Run `npm run test:whatsapp:roles` to post six fictional role messages in Test_group, interpret them through Hermes, and update the current board silently. Availability questions do not claim a role; explicit claims and bare role names fill open roles. A filled role keeps its existing holder, including when another person asks for it. Requests are processed in order.
 
-On your phone, find five `the helper — ROLE CHECK TEST` replies: Listener starts open, Timer belongs to Mira Example, Iris Example gets Listener, a later Listener request names Iris, and the Timer question still names Mira. The final table keeps Grammarian open. The unclear “that one” message goes privately to the Secretary's self-chat. All examples are fictional.
+On your phone, find only the final table after the fictional source: Timer belongs to Mira Example, Listener belongs to Iris Example, and Grammarian stays open. There must be no individual role replies or public conflict notes. The unclear “that one” message goes privately to the Secretary's self-chat. All examples are fictional.
 
 This is a bounded test run, not an always-on listener. Completed runs do not send duplicate messages, and intermediate receipts let a retry resume after confirmed sends.
 
-Run `node scripts/run-milestone-2.mjs --mixed-chatter` for a separate fictional conversation mixing five everyday messages with six role-related messages. The live AI check must ignore all five everyday messages, including unrelated uses of “timer” and “listener,” while producing the same role replies and final board. This uses realistic invented chatter, not real club conversations.
+Run `node scripts/run-milestone-2.mjs --mixed-chatter` for a separate fictional conversation mixing five everyday messages with six role-related messages. The live AI check must ignore all five everyday messages, including unrelated uses of “timer” and “listener,” while producing only the final board in the group. This uses realistic invented chatter, not real club conversations.
 
 Run `node scripts/run-milestone-2.mjs --long-chatter` for exactly 60 invented messages: 48 everyday messages and 12 role-related messages, including conflicts and withdrawals. The runner posts the source conversation in Test_group, reads it back, then interprets six batches of ten through Hermes. Each batch sees the board updated by preceding batches and uses the same rate, budget, and 500-output-token limits. Saved interpretation batches let retries resume without repeating completed calls.
 
-The expected final board is Timer: Mira Example, Listener: Lena Example, Grammarian: Iris Example. There should be eleven group replies, no replies to everyday chatter, and one unclear-message clarification only in Secretary self-chat.
+The expected final board is Timer: Mira Example, Listener: Lena Example, Grammarian: Iris Example. There should be no individual group replies: only the updated table after the test source, and one unclear-message clarification only in Secretary self-chat. The live check records every group send and rejects any extra output or duplicate table. Separate table-only receipts allow this corrected test to run without changing earlier test receipts.
 
 ## Limits and local state
 

@@ -1,11 +1,10 @@
 const { renderTable } = require('./role-board.cjs');
 
 function buildBoardDelivery(result, messages) {
-  const publicNotes = [];
   const privateNotes = [];
   for (const note of result.notes) {
     if (note.kind === 'conflict') {
-      publicNotes.push(note.text);
+      // Filled-role conflicts preserve the holder silently in the group.
     } else if (note.kind === 'clarify') {
       const source = messages.find(message => message.id === note.messageId);
       if (!source) throw new Error('A clarification must include its original message.');
@@ -15,12 +14,18 @@ function buildBoardDelivery(result, messages) {
     }
   }
   return {
-    groupText: `the helper — UPDATED TEST BOARD\nBuilt from the made-up source messages in this group.\n\n${renderTable(result.board)}` +
-      (publicNotes.length ? '\n\n' + publicNotes.join('\n') : ''),
+    groupText: renderTable(result.board),
     secretaryText: privateNotes.length
       ? 'the helper — PRIVATE TEST CLARIFICATION\nFor the Secretary only. All names and messages are fictional.\n\n' + privateNotes.join('\n\n')
       : null,
   };
+}
+
+function assertTableOnlyGroupMessages(texts, sourceText, tableText) {
+  const outputs = texts.filter(text => text !== sourceText);
+  if (outputs.length !== 1 || outputs[0] !== tableText || texts.filter(text => text === sourceText).length > 1) {
+    throw new Error('The group must receive only one updated table after the test source.');
+  }
 }
 
 function assertTestDestination(destination, groupId, secretaryId) {
@@ -38,4 +43,4 @@ function assertPrivateSendReceipt(receipt, secretaryId) {
   }
 }
 
-module.exports = { buildBoardDelivery, assertTestDestination, assertPrivateSendReceipt };
+module.exports = { buildBoardDelivery, assertTestDestination, assertPrivateSendReceipt, assertTableOnlyGroupMessages };
