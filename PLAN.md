@@ -21,7 +21,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom (verified with fictional data in Test_group and confirmed on the phone).
 - [x] 3. Generate the role board as an image with the same layout and every name in the correct slot (square preview confirmed directly in WhatsApp self-chat).
 - [x] 4. Get the Secretary's approval to post the board at the time they select (confirmed in Secretary self-chat).
-- [ ] 5. Post the board in the WhatsApp group.
+- [x] 5. Post the board in the WhatsApp group (approved fictional image delivered to Test_group and confirmed on the phone).
 - [ ] 6. Let the Secretary edit a role on the board.
 - [ ] 7. Close and reopen the helper, and confirm the board is still there.
 
@@ -106,6 +106,6 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Approved by the user on 2026-10-07. Post only the exact approved fictional square image to Test_group at the Secretary-selected time.
 - Recheck saved approval, image hash, paired identity, and live group name immediately before sending. Persist the attempt before sending, wait for WhatsApp acknowledgement, and refuse duplicate or uncertain retries.
 - The laptop runner can wait with --watch; the laptop must remain awake and connected. The user authorized an immediate test post, with the original selected time retained in the private audit record.
-- Posted the exact approved square image to Test_group. Fixed group acknowledgement handling to use participant delivery receipts, recovered the existing receipt without resending, and verified delivery. All 75 tests pass; rerunning sends no duplicate. Awaiting the user’s phone confirmation.
+- Posted the exact approved square image to Test_group. Fixed group acknowledgement handling to use participant delivery receipts, recovered the existing receipt without resending, and verified delivery. All 75 tests pass; rerunning sends no duplicate. The user confirmed seeing the image in Test_group on the phone; milestone 5 is complete.
 
 ## Parked list
