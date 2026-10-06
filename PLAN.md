@@ -64,6 +64,6 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - User requested no individual role replies, only the updated table.
 - Removed public conflict notes and per-message group sends; retained holder protection, withdrawals, availability checks, and private Secretary clarification.
 - Replayed all 60 fictional messages through six live Hermes calls. Recorded the actual group sends and verified exactly one final table after the source transcript, with no role replies. All 48 everyday messages were ignored; final holders remained Timer Mira Example, Listener Lena Example, Grammarian Iris Example. WhatsApp confirmed private clarification delivery.
-- All 31 tests pass, including checks that extra replies or duplicate tables fail verification. Awaiting the user's phone check before pushing this correction.
+- All 31 tests pass, including checks that extra replies or duplicate tables fail verification. The user confirmed seeing only the updated table after the latest test source on the phone; this correction is confirmed.
 
 ## Parked list
