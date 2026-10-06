@@ -16,7 +16,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 ## Milestones
 
 - [x] 1. Read WhatsApp chatter and the current role board, then show the updated board in a table (verified with made-up data in Test_group).
-- [ ] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom.
+- [x] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom (verified with fictional data in Test_group and confirmed on the phone).
 - [ ] 3. Generate the role board as an image with the same layout and every name in the correct slot.
 - [ ] 4. Get the Secretary's approval to post the board at the time they select.
 - [ ] 5. Post the board in the WhatsApp group.
@@ -36,7 +36,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 ## Milestone 2 approach
 
-- Approved by the user on 2026-10-07. All 27 tests pass; five role replies and the final table were posted and read back in Test_group. WhatsApp confirmed the private clarification send. Awaiting the user’s phone confirmation before marking milestone 2 complete or pushing.
+- Approved by the user on 2026-10-07. All 27 tests pass; five role replies and the final table were posted and read back in Test_group. WhatsApp confirmed the private clarification send. The user confirmed the group results and private clarification on the phone; milestone 2 is complete for the bounded test flow.
 - Reply with the current holder for filled roles; never replace them.
 - Answer availability questions without assigning a role. An explicit claim or bare role name takes an open role.
 - Apply requests in message order so later requests see earlier assignments.
