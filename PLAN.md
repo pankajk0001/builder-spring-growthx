@@ -75,4 +75,12 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 37 tests pass, including slot mapping, pairing, long names, missing/unknown roles, destination restrictions, and image verification.
 - Awaiting the user's phone check before marking milestone 3 complete or pushing. Approval scheduling and group image posting remain milestones 4 and 5.
 
+## Milestone 3 chat-preview correction
+
+- User confirmed the original layout and name placement, then requested a preview visible after downloading without opening gallery view.
+- Changed the board to a compact square (1:1), preserving all sections, holders, open roles, and speaker/evaluator pairings. Long names expand the square rather than clipping rows.
+- Visually inspected the 1700 × 1700 preview. Sent the corrected image privately with an explicitly generated full-board thumbnail and image dimensions; WhatsApp confirmed the image checksum, caption, thumbnail and dimensions. No group sends.
+- All 39 tests pass, including square output for long names and refusal to verify a changed thumbnail or wrong dimensions.
+- Awaiting the user's check of the latest square image directly in WhatsApp chat before completing milestone 3 or pushing.
+
 ## Parked list

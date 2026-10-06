@@ -42,11 +42,11 @@ The expected final board is Timer: Mira Example, Listener: Lena Example, Grammar
 
 ## Preview the role-board image (milestone 3)
 
-Run `npm run test:whatsapp:image` to create a fictional board PNG and send it with its source table to the paired Secretary self-chat. It sends nothing to a group. On your phone using mobile data, find `the helper — FICTIONAL BOARD PREVIEW` and compare all names in the image to the source-table caption, especially the three speaker/evaluator pairings and Open roles.
+Run `npm run test:whatsapp:image` to create a fictional board PNG and send it with its source table to the paired Secretary self-chat. It sends nothing to a group. On your phone using mobile data, find `the helper — SQUARE BOARD PREVIEW` and compare all names in the image to the source-table caption, especially the three speaker/evaluator pairings and Open roles.
 
 The renderer draws text directly from the board data, using bundled Inter rather than AI image generation. It follows the local reference's blue sections, red table rows, role order, and closing message. Long names wrap and rows grow as needed. Unknown or missing layout roles fail rather than disappear. The test uses a fictional club badge, meeting, and members; the real reference file is ignored by git.
 
-The PNG and delivery receipt stay under `~/.hermes/the-helper/`. The runner checks the returned image checksum, caption, and self-chat destination, and skips a completed identical preview. Scheduled approval and group image posting are later milestones.
+The PNG and delivery receipt stay under `~/.hermes/the-helper/`. The image is square, with a complete-board thumbnail and explicit image dimensions sent to WhatsApp. The runner checks the returned image checksum, caption, thumbnail, dimensions, and self-chat destination, and skips a completed identical preview. Download the latest image and check whether the whole board is visible directly in chat without opening the gallery. Scheduled approval and group image posting are later milestones.
 
 The Inter font is from the official [Inter repository](https://github.com/rsms/inter), distributed under the bundled SIL Open Font License in `assets/fonts/Inter-LICENSE.txt`.
 

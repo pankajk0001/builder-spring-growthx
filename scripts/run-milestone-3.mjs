@@ -32,7 +32,7 @@ const { default: pino } = await import(pathToFileURL(requireBridge.resolve('pino
 const { state, saveCreds } = await baileys.useMultiFileAuthState(target.sessionPath);
 const secretaryId = baileys.jidNormalizedUser(state.creds.me?.id || '');
 if (!/^\d+@s\.whatsapp\.net$/.test(secretaryId)) throw new Error('The paired Secretary self-chat is missing.');
-if (previous?.completed && previous.secretaryId === secretaryId && previous.sha256 === imageHash) {
+if (previous?.completed && previous.chatPreviewVerified && previous.secretaryId === secretaryId && previous.sha256 === imageHash) {
   status('This image preview was already sent to self-chat; no duplicate sent.');
   process.exit(0);
 }
@@ -51,7 +51,7 @@ try {
       if (connection === 'close') { clearTimeout(timer); reject(new Error('WhatsApp connection closed.')); }
     });
   });
-  const caption = 'the helper — FICTIONAL BOARD PREVIEW\nNot posted to any group. All club details and names are made up.\nCompare the image with its source table:\n\n' + renderTable(fixture.board);
+  const caption = 'the helper — SQUARE BOARD PREVIEW\nMade-up test. Download the image and check the whole board directly in chat, without opening the gallery.\nNot posted to any group. Source table:\n\n' + renderTable(fixture.board);
   const receipt = await sendPrivateBoardPreview(sock, secretaryId, rendered.png, caption);
   await writeFile(receiptPath, JSON.stringify({ completed: true, ...receipt, secretaryId,
     board: fixture.board, meeting: fixture.meeting, width: rendered.width, height: rendered.height,

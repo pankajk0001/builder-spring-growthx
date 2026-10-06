@@ -17,6 +17,15 @@ test('every board holder appears in exactly their named slot, with open roles pr
   assert.equal(rendered.png.readUInt32BE(16), rendered.width);
   assert.equal(rendered.png.readUInt32BE(20), rendered.height);
 });
+test('the image stays square, including when long names need taller rows', () => {
+  const regular = renderBoardImage(fixture);
+  assert.equal(regular.width, regular.height);
+  const long = structuredClone(fixture);
+  long.board.find(row => row.role === 'Speaker 1').member = 'Alexandria Very Long Fictional Participant With Several Additional Made Up Names Example';
+  const expanded = renderBoardImage(long);
+  assert.equal(expanded.width, expanded.height);
+  assert.ok(expanded.cells.every(cell => cell.bottom <= cell.rowBottom));
+});
 test('speakers and their numbered evaluators share a row without mixing names', () => {
   const result = renderBoardImage(fixture);
   for (let i = 1; i <= 3; i++) {
@@ -28,7 +37,7 @@ test('speakers and their numbered evaluators share a row without mixing names', 
 });
 test('long names wrap inside their own cell rather than hiding or crossing into another row', () => {
   const input = structuredClone(fixture);
-  input.board.find(row => row.role === 'Speaker 1').member = 'Alexandria Very Long Fictional Participant Example';
+  input.board.find(row => row.role === 'Speaker 1').member = 'Alexandria Very Long Fictional Participant With Several Additional Made Up Names Example';
   const result = renderBoardImage(input);
   const cell = result.cells.find(cell => cell.role === 'Speaker 1');
   assert.ok(cell.lines.length > 1);

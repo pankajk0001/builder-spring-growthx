@@ -6,7 +6,7 @@ if (!GlobalFonts.registerFromPath(join(__dirname, '../assets/fonts/InterVariable
   throw new Error('The board font could not be loaded.');
 }
 const BLUE = '#064763', RED = '#982438', WHITE = '#FFFFFF';
-const WIDTH = 656, SPLIT = 342, SCALE = 2;
+const WIDTH = 850, SPLIT = 442, SCALE = 2;
 const ROWS = [
   { role: 'TMOD', label: 'TMOD (5–7 Minutes)' },
   { role: 'Word & Idiom Master', label: 'Word & Idiom Master (1–2 Minutes)' },
@@ -55,26 +55,30 @@ function renderBoardImage({ board, meeting }) {
   useFont(measure, 17);
   const nameWidth = WIDTH - SPLIT - 28;
   const planned = ROWS.map(row => {
-    if (row.section) return { ...row, height: row.detail ? 48 : 38 };
+    if (row.section) return { ...row, height: row.detail ? 40 : 32 };
     useFont(measure, 17);
     const lines = wrap(measure, holders.get(row.role), nameWidth);
     const evaluatorLines = row.evaluator ? wrap(measure, `Evaluator (2–3 Minutes): ${holders.get(row.evaluator)}`, nameWidth) : [];
     useFont(measure, 16, true);
     const labelLines = wrap(measure, row.label, SPLIT - 24);
     const nameHeight = (lines.length + evaluatorLines.length) * 23 + (row.evaluator ? 12 : 0);
-    return { ...row, lines, evaluatorLines, labelLines, height: Math.max(row.evaluator ? 84 : 53, nameHeight + 22, labelLines.length * 23 + 22) };
+    return { ...row, lines, evaluatorLines, labelLines, height: Math.max(row.evaluator ? 74 : 42, nameHeight + 16, labelLines.length * 23 + 16) };
   });
   useFont(measure, 20, true);
   const clubLines = wrap(measure, meeting.club, WIDTH - 114);
   useFont(measure, 16, true);
   const meetingLines = wrap(measure, `Meeting #${meeting.number} · ${meeting.date} at ${meeting.time}`, WIDTH - 114);
-  const headerHeight = Math.max(96, (clubLines.length + meetingLines.length) * 25 + 28);
-  const logicalHeight = headerHeight + planned.reduce((sum, row) => sum + row.height, 0) + 44;
-  const canvas = createCanvas(WIDTH * SCALE, logicalHeight * SCALE);
+  const headerHeight = Math.max(84, (clubLines.length + meetingLines.length) * 25 + 28);
+  const logicalHeight = headerHeight + planned.reduce((sum, row) => sum + row.height, 0) + 40;
+  // A square image preserves the whole board in a square chat thumbnail.
+  // Extra-long content expands the canvas rather than clipping any row.
+  const side = Math.max(WIDTH, logicalHeight);
+  const canvas = createCanvas(side * SCALE, side * SCALE);
   const ctx = canvas.getContext('2d');
   ctx.scale(SCALE, SCALE);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = BLUE; ctx.fillRect(0, 0, WIDTH, logicalHeight);
+  ctx.fillStyle = BLUE; ctx.fillRect(0, 0, side, side);
+  ctx.translate((side - WIDTH) / 2, (side - logicalHeight) / 2);
   const cells = [];
 
   function drawLines(lines, x, top, size, bold = false, lineHeight = 23) {
@@ -96,8 +100,8 @@ function renderBoardImage({ board, meeting }) {
   let y = headerHeight;
   for (const row of planned) {
     if (row.section) {
-      drawLines([row.section], WIDTH / 2, y + (row.detail ? 3 : (row.height - 23) / 2), 16, true);
-      if (row.detail) drawLines([row.detail], WIDTH / 2, y + 25, 12);
+      drawLines([row.section], WIDTH / 2, y + (row.detail ? 0 : (row.height - 23) / 2), 16, true);
+      if (row.detail) drawLines([row.detail], WIDTH / 2, y + 19, 12, false, 18);
     } else {
       ctx.fillStyle = RED; ctx.fillRect(0, y, WIDTH, row.height);
       // Subtle, reproducible botanical linework behind the table.

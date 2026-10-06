@@ -2,7 +2,7 @@
 
 This specification records structure only; the local reference and its real club details are not published.
 
-- Portrait board, rendered at twice logical size for WhatsApp readability.
+- Square board (1:1), rendered at twice logical size for WhatsApp readability. Compact rows keep the whole board within the chat preview; longer names expand the square without cropping.
 - Blue headers (#064763), red rows (#982438), white text and fine pale dividers.
 - Bundled Inter, with bold role labels and section headings; center aligned text.
 - Two columns: roles on the left; assigned names or Open on the right.
