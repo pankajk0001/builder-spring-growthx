@@ -14,8 +14,22 @@ function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   const row = updated.board.find(row => row.role.toLowerCase() === field);
   if (row) {
     if (value.includes(':')) throw new Error('Send one role correction at a time, like Timer: Zara Example.');
+    if (/^(remove|hide)$/i.test(value)) {
+      if (!/^Speaker [1-3]$/.test(row.role)) throw new Error('Only a speaker slot can be removed. Use Open for other roles.');
+      row.removed = true; row.member = null;
+      const evaluator = updated.board.find(item => item.role === row.role.replace('Speaker', 'Evaluator'));
+      if (evaluator) { evaluator.removed = true; evaluator.member = null; }
+      return { ...updated, changedField: row.role, fieldId: `role:${row.role}` };
+    }
     if (testOnly && !/^(open|tbd)$/i.test(value) && !value.endsWith(' Example')) throw new Error('Use a made-up test name ending in Example, or Open.');
     row.member = /^(open|tbd)$/i.test(value) ? null : value;
+    if (row.removed) {
+      row.removed = false;
+      if (/^Speaker [1-3]$/.test(row.role)) {
+        const evaluator = updated.board.find(item => item.role === row.role.replace('Speaker', 'Evaluator'));
+        if (evaluator?.removed) evaluator.removed = false;
+      }
+    }
     return { ...updated, changedField: row.role, fieldId: `role:${row.role}` };
   }
   const fields = { club: 'club', 'club name': 'club', 'meeting number': 'number', 'meeting date': 'date', date: 'date', 'meeting time': 'time', time: 'time' };
@@ -74,6 +88,15 @@ function editBoard(input, text, options = {}) {
     current = { board: edited.board, meeting: edited.meeting };
   }
   const conflictingLines = new Set();
+  for (const speaker of current.board.filter(row => /^Speaker [1-3]$/.test(row.role) && row.removed)) {
+    const role = speaker.role.replace('Speaker', 'Evaluator');
+    const evaluator = current.board.find(row => row.role === role);
+    if (evaluator && !evaluator.removed) {
+      const line = byField.get(`role:${role}`)?.[0]?.line || `${role}: Open`;
+      conflictingLines.add(line);
+      invalidCorrections.push({ line, reason: `${role} stays removed until the Secretary adds ${speaker.role} back.` });
+    }
+  }
   for (const conflict of duplicateRoleHolders(current.board)) {
     const changedRoles = conflict.roles.filter(role => byField.has(`role:${role}`));
     const blockedRoles = changedRoles.length ? changedRoles : conflict.roles.slice(1);

@@ -127,4 +127,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Moving a holder works when their previous role is reopened in the same batch. Names are compared without case or spacing differences. Approval and final group posting both reject a duplicate-holder board saved by an older version.
 - All 93 tests pass. Replayed Timer: Noel Example; Listner: Noel Example and verified both lines were rejected privately because Noel already holds TMOD. No new preview or group image was sent. The private retry prompt was acknowledged; fresh corrected-preview approval still awaits the phone check.
 
+## Removing a speaker slot
+
+- User requested removal rather than showing an open slot, and explicitly chose to hide the paired evaluator too. Speaker 2: Remove hides both slots from the table and image; assigning a new Speaker 2 restores the pair with its evaluator open.
+- Group chatter cannot reactivate removed slots. Removing all speakers hides that section; existing slot numbers stay stable. Cancel and fresh approval use the same private edit flow.
+- All 99 tests pass. Visually checked a fictional square board with Speaker 2 and Evaluator 2 absent. Reloaded the private listener and delivered removal instructions; live removal preview and corrected group delivery await the phone check.
+
 ## Parked list

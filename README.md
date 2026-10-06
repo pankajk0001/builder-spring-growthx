@@ -87,3 +87,5 @@ Run `npm run test:whatsapp:edit` to listen in Secretary self-chat for 15 minutes
 Role corrections accept the common Listner spelling for Listener and explicit sentences such as “Timer is taken by Zara Example and Listener is taken by Finn Example.” Uncertain or negated assignments require clarification.
 
 Each person can hold only one role. The helper checks all assignments after applying the proposed batch, so moving someone is allowed when their previous role is reopened in that same message. Conflicts are quoted privately with the other roles; no new preview or group post is created until corrected. Approval and posting also block old previews containing duplicate holders.
+
+To remove a prepared-speaker slot, send `Speaker 2: Remove` while editing. Speaker 2 and Evaluator 2 disappear from the image and text table, rather than displaying Open. Group claims cannot restore removed slots. Assigning `Speaker 2: Zara Example` later restores the pair with an open Evaluator 2; the corrected preview still needs APPROVE before posting. Remaining slot numbers stay unchanged.

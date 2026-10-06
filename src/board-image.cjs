@@ -54,7 +54,17 @@ function renderBoardImage({ board, meeting }) {
   const measure = createCanvas(1, 1).getContext('2d');
   useFont(measure, 17);
   const nameWidth = WIDTH - SPLIT - 28;
-  const planned = ROWS.map(row => {
+  const inactive = new Set(board.filter(row => row.removed).map(row => row.role));
+  const visibleRows = ROWS.flatMap(row => {
+    if (row.section === 'Prepared Speakers' && !board.some(item => /^(Speaker|Evaluator) [1-3]$/.test(item.role) && !item.removed)) return [];
+    if (!row.role) return [row];
+    if (inactive.has(row.role)) {
+      if (row.evaluator && !inactive.has(row.evaluator)) return [{ role: row.evaluator, label: `${row.evaluator} (2–3 Minutes)` }];
+      return [];
+    }
+    return [row.evaluator && inactive.has(row.evaluator) ? { ...row, evaluator: undefined } : row];
+  });
+  const planned = visibleRows.map(row => {
     if (row.section) return { ...row, height: row.detail ? 40 : 32 };
     useFont(measure, 17);
     const lines = wrap(measure, holders.get(row.role), nameWidth);

@@ -10,6 +10,8 @@ function validateInput(board, messages) {
     if (row.member !== null && (typeof row.member !== 'string' || !row.member.trim())) {
       throw new Error('A role holder must be a name or null for an open role.');
     }
+    if (row.removed !== undefined && typeof row.removed !== 'boolean') throw new Error('Removed must be true or false.');
+    if (row.removed && (!/^(Speaker|Evaluator) [1-3]$/.test(row.role) || row.member !== null)) throw new Error('A removed speaker or evaluator slot cannot have a holder.');
     roles.add(row.role);
   }
   if (!Array.isArray(messages) || messages.length > 300) throw new Error('Use at most 300 messages.');
@@ -46,7 +48,7 @@ function updateBoard(board, messages, decisions) {
       continue;
     }
     const row = updated.find(row => row.role === decision.role);
-    if (!row) {
+    if (!row || row.removed) {
       notes.push({ messageId: message.id, kind: 'clarify', text: `Secretary: please confirm the role in ${message.sender}'s message.` });
       continue;
     }
@@ -70,7 +72,7 @@ function safeCell(value) {
 }
 
 function renderTable(board) {
-  const rows = board.map(row => [safeCell(row.role), row.member === null ? 'Open' : safeCell(row.member)]);
+  const rows = board.filter(row => !row.removed).map(row => [safeCell(row.role), row.member === null ? 'Open' : safeCell(row.member)]);
   const width = Math.max(4, ...rows.map(row => row[0].length));
   return '```\n' + ['Role'.padEnd(width) + ' | Member', '-'.repeat(width) + '-|-------',
     ...rows.map(([role, member]) => role.padEnd(width) + ' | ' + member)].join('\n') + '\n```';

@@ -12,7 +12,7 @@ function respondToRoles(board, messages, decisions) {
     }
     const row = current.find(row => row.role === decision.role);
     if (decision.intent === 'check' || decision.intent === 'take') {
-      if (!row) {
+      if (!row || row.removed) {
         notes.push({ messageId: message.id, kind: 'clarify', text: `Secretary: please confirm the role in ${message.sender}'s message.` });
         continue;
       }
