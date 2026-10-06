@@ -43,3 +43,20 @@ test('a cropped thumbnail or wrong image dimensions cannot pass the chat-preview
     await assert.rejects(sendPrivateBoardPreview(socket, secretary, png, 'Fictional preview'), /full-board thumbnail/);
   }
 });
+test('group posting checks the live Test_group name and verifies the exact image', async () => {
+ const { sendTestGroupBoard } = require('../src/preview-delivery.cjs');
+ const target = {name:'Test_group',groupId:'15550000001-123@g.us'};
+ const { png } = renderBoardImage(fixture);
+ let sends=0, subject='Other_group';
+ const socket={groupMetadata:async()=>({subject}),sendMessage:async(destination,payload)=>{
+  sends++;
+  return {key:{id:'fictional-group-image',fromMe:true,remoteJid:destination},message:{imageMessage:{caption:payload.caption,width:payload.width,height:payload.height,jpegThumbnail:payload.jpegThumbnail,fileSha256:createHash('sha256').update(payload.image).digest()}}};
+ }};
+ await assert.rejects(sendTestGroupBoard(socket,target,png,'Fictional board'),/no longer Test_group/);
+ assert.equal(sends,0);
+ subject='Test_group';
+ const result=await sendTestGroupBoard(socket,target,png,'Fictional board');
+ assert.equal(sends,1); assert.equal(result.sha256,createHash('sha256').update(png).digest('hex'));
+ await assert.rejects(sendTestGroupBoard(socket,{...target,name:'Other_group'},png,'Fictional board'),/Only Test_group/);
+ assert.equal(sends,1);
+});

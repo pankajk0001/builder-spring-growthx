@@ -73,3 +73,7 @@ The runner accepts fictional data only, limits input to 300 messages, requests a
 Hermes sign-in credentials, WhatsApp session files, the group ID, usage ledger, and delivery receipt stay outside this repository under `~/.hermes/`. Never copy them into git.
 
 Milestone 1 was posted and checked through WhatsApp, and the user confirmed the table and private clarification on a phone. The code is saved in the GitHub repository `pankajk0001/builder-spring-growthx`. This milestone runs through Hermes on the laptop; it has no static frontend to deploy.
+
+### Posting an approved board (milestone 5)
+
+Run `npm run test:whatsapp:post` to post only when the approved time has arrived. Add `-- --watch` to wait on this laptop; it must stay awake and connected. The runner uses only Test_group and fictional data, sends the approved image once, and waits for WhatsApp acknowledgement. A saved uncertain attempt blocks automatic resends; when an image receipt exists, rerunning checks that existing receipt without sending another image. Use `-- --post-now-test` only after the Secretary explicitly chooses an immediate test post; the previous selected time is preserved in the private record. Credentials and posting records stay outside the repository.

@@ -9,7 +9,8 @@
     "test:whatsapp": "node scripts/run-milestone-1.mjs",
     "test:whatsapp:roles": "node scripts/run-milestone-2.mjs",
     "test:whatsapp:image": "node scripts/run-milestone-3.mjs",
-    "test:whatsapp:approval": "node scripts/run-milestone-4.mjs"
+    "test:whatsapp:approval": "node scripts/run-milestone-4.mjs",
+    "test:whatsapp:post": "node scripts/run-milestone-5.mjs"
   },
   "keywords": [],
   "author": "",

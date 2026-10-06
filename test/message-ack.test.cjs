@@ -31,3 +31,16 @@ test('an unrelated receipt cannot verify the reply and a missing receipt times o
   update(events, 2, 'fictional-reply', '15550000002@s.whatsapp.net');
   await assert.rejects(tracker.wait('fictional-reply'), /not acknowledged/);
 });
+test('only the explicitly configured test group can acknowledge a board post',async()=>{
+ const events=new EventEmitter();
+ const targetGroupId='15550000001-123@g.us';
+ const tracker=createMessageAckTracker(events,{secretaryId,targetGroupId},1000);
+ update(events,2,'fictional-group-image',targetGroupId);
+ await tracker.wait('fictional-group-image');
+});
+test('group delivery uses participant receipts instead of private-chat status events',async()=>{
+ const events=new EventEmitter(); const targetGroupId='15550000001-123@g.us';
+ const tracker=createMessageAckTracker(events,{secretaryId,targetGroupId},1000);
+ events.emit('message-receipt.update',[{key:{id:'fictional-board',fromMe:true,remoteJid:targetGroupId},receipt:{receiptTimestamp:123,userJid:'15550000002@s.whatsapp.net'}}]);
+ await tracker.wait('fictional-board');
+});

@@ -101,4 +101,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 70 tests pass. The live single correction reopened Timer and produced a square preview acknowledged by WhatsApp. The user requested several corrections at once; batch validation is atomic and produces one preview. Invalid corrections are quoted with their reason; valid lines are retained privately so only the invalid lines need to be resent. Partial retries keep remaining invalid lines unresolved. The user confirmed the live multi-correction and invalid-line retry flow on the phone. Saved state is approved, with no unresolved corrections or pending replies; renewed approval and final WhatsApp acknowledgement are verified.
 - Post-publication edits remain in milestone 6; this addition covers editing before approval only.
 
+## Milestone 5 approach
+
+- Approved by the user on 2026-10-07. Post only the exact approved fictional square image to Test_group at the Secretary-selected time.
+- Recheck saved approval, image hash, paired identity, and live group name immediately before sending. Persist the attempt before sending, wait for WhatsApp acknowledgement, and refuse duplicate or uncertain retries.
+- The laptop runner can wait with --watch; the laptop must remain awake and connected. The user authorized an immediate test post, with the original selected time retained in the private audit record.
+- Posted the exact approved square image to Test_group. Fixed group acknowledgement handling to use participant delivery receipts, recovered the existing receipt without resending, and verified delivery. All 75 tests pass; rerunning sends no duplicate. Awaiting the user’s phone confirmation.
+
 ## Parked list

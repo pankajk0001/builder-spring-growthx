@@ -7,8 +7,17 @@ function createMessageAckTracker(events, identity, timeoutMs = 15000) {
   const waiting = new Map();
   events.on('messages.update', updates => {
     for (const { key, update } of updates) {
-      if (!key?.id || key.fromMe !== true || !isSecretaryChat(key.remoteJid, identity) ||
+      if (!key?.id || key.fromMe !== true || !(isSecretaryChat(key.remoteJid, identity) || (identity.targetGroupId && key.remoteJid === identity.targetGroupId)) ||
           ![2, 3, 4, 5].includes(update?.status)) continue;
+      accepted.add(key.id);
+      const pending = waiting.get(key.id);
+      if (pending) { clearTimeout(pending.timer); waiting.delete(key.id); pending.resolve(); }
+    }
+  });
+  events.on('message-receipt.update', updates => {
+    for (const { key, receipt } of updates) {
+      if (!identity.targetGroupId || key?.remoteJid !== identity.targetGroupId || key.fromMe !== true || !key.id ||
+          !(receipt?.receiptTimestamp || receipt?.readTimestamp)) continue;
       accepted.add(key.id);
       const pending = waiting.get(key.id);
       if (pending) { clearTimeout(pending.timer); waiting.delete(key.id); pending.resolve(); }
