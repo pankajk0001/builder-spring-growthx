@@ -29,6 +29,8 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 10. Repost only when roles differ from the last posted board, and base the cycle on any meeting day, ending at 20:00 India time the day before the meeting (Sunday dated board confirmed on the phone; all seven days and unchanged-board checks tested).
 - [x] 11. Save the usual meeting day and time during setup, then fill both on every fresh weekly board (Sunday 4:30 PM saved; auto-filled fresh preview confirmed on the phone).
 
+- Full setup repeat confirmed: user answered reminder day/time, usual meeting day, and usual meeting time in sequence. Current saved settings are Monday 19:00 reminder and Sunday 2:30 PM meeting. Fresh 11 October, 2:30 PM private preview was acknowledged and confirmed on the phone; posted board restored and helper restarted without a group repost.
+
 ## Milestone 1 approach
 
 - Inspect the existing Hermes setup on the laptop and its WhatsApp connection.
