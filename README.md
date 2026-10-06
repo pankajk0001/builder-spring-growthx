@@ -50,6 +50,18 @@ The PNG and delivery receipt stay under `~/.hermes/the-helper/`. The image is sq
 
 The Inter font is from the official [Inter repository](https://github.com/rsms/inter), distributed under the bundled SIL Open Font License in `assets/fonts/Inter-LICENSE.txt`.
 
+## Approve a board and choose its time (milestone 4)
+
+Run `npm run test:whatsapp:approval` after confirming the current square image on the phone. The helper sends that exact fictional preview to Secretary self-chat, then waits for real phone replies:
+
+1. Reply `APPROVE` after checking the image, or `CANCEL`.
+2. Enter a future date and 24-hour time such as `2026-10-08 20:00`, interpreted in India time (IST). The helper shows an example based on the current date.
+3. Check the displayed full date, time and Test_group destination, then reply `CONFIRM` to save approval.
+
+Approval is bound to the exact image. Changed boards, old messages, other people, group messages, duplicate events, invalid dates and past times cannot approve it. These steps make no AI calls. Approval state, message IDs and pending private replies stay outside git in `~/.hermes/the-helper/approval-state.json`; real chat text is not logged. The test listener stops on confirmation or cancellation, or pauses after 15 minutes; rerun to resume the saved request without duplicating the preview. Completed requests do not send duplicate prompts.
+
+This milestone saves the approval and selected time. It sends nothing to any group and does not schedule delivery yet; group posting is milestone 5.
+
 ## Limits and local state
 
 The runner accepts fictional data only, limits input to 300 messages, requests a maximum of 500 output tokens, disables request retries, and records at most 100 requests per rolling hour in a locked laptop file. Its $5 local guard reserves a conservative API-equivalent estimate; Codex subscription allowance is controlled by the signed-in account, rather than an API billing limit.

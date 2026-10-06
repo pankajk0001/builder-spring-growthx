@@ -83,4 +83,13 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 39 tests pass, including square output for long names and refusal to verify a changed thumbnail or wrong dimensions.
 - The user confirmed the whole downloaded square image is visible directly in WhatsApp chat without opening the gallery; milestone 3 is complete.
 
+## Milestone 4 approach
+
+- User approved private board approval and selection of a posting date and time on 2026-10-07.
+- Send the exact phone-confirmed square fictional board to Secretary self-chat. Accept APPROVE only from fresh phone-originated events in that self-chat.
+- Ask one question at a time: approval, date and 24-hour time in India time, then CONFIRM after displaying the exact date/time and Test_group destination.
+- Bind final approval to the preview's image hash. Reject other people, group messages, old history, duplicate events, invalid/past dates, and confirmation after the selected time has passed. A changed board clears earlier approval and time.
+- Save state and pending private replies atomically outside the repository. The 15-minute test listener resumes the saved request on rerun.
+- All 48 automated tests pass. Live phone approval test is in progress; no group posting or delivery scheduler is enabled in this milestone.
+
 ## Parked list
