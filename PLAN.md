@@ -66,4 +66,13 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Replayed all 60 fictional messages through six live Hermes calls. Recorded the actual group sends and verified exactly one final table after the source transcript, with no role replies. All 48 everyday messages were ignored; final holders remained Timer Mira Example, Listener Lena Example, Grammarian Iris Example. WhatsApp confirmed private clarification delivery.
 - All 31 tests pass, including checks that extra replies or duplicate tables fail verification. The user confirmed seeing only the updated table after the latest test source on the phone; this correction is confirmed.
 
+## Milestone 3 approach and verification
+
+- User approved matching the supplied local board reference on 2026-10-07.
+- Render a PNG directly from board data: blue section headers, red two-column rows, matching role order, three paired speaker/evaluator rows, and the closing message. Use Inter and a fictional club badge rather than copying real club details.
+- Every role maps to one explicit slot. Open roles display Open; names wrap and rows expand to prevent overlap. Unknown or missing slots fail instead of silently dropping data.
+- Generated and visually inspected a 1312 × 2062 fictional board containing all 15 roles. WhatsApp confirmed the exact image checksum and source-table caption sent only to the paired Secretary self-chat, without any group sends.
+- All 37 tests pass, including slot mapping, pairing, long names, missing/unknown roles, destination restrictions, and image verification.
+- Awaiting the user's phone check before marking milestone 3 complete or pushing. Approval scheduling and group image posting remain milestones 4 and 5.
+
 ## Parked list

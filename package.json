@@ -7,7 +7,8 @@
     "test": "node --test test/*.test.cjs",
     "deploy": "npx @convex-dev/static-hosting deploy",
     "test:whatsapp": "node scripts/run-milestone-1.mjs",
-    "test:whatsapp:roles": "node scripts/run-milestone-2.mjs"
+    "test:whatsapp:roles": "node scripts/run-milestone-2.mjs",
+    "test:whatsapp:image": "node scripts/run-milestone-3.mjs"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
   "type": "commonjs",
   "dependencies": {
     "@convex-dev/static-hosting": "^0.2.1",
+    "@napi-rs/canvas": "^1.0.10",
     "convex": "^1.46.0"
   }
 }

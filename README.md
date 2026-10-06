@@ -40,6 +40,16 @@ Run `node scripts/run-milestone-2.mjs --long-chatter` for exactly 60 invented me
 
 The expected final board is Timer: Mira Example, Listener: Lena Example, Grammarian: Iris Example. There should be no individual group replies: only the updated table after the test source, and one unclear-message clarification only in Secretary self-chat. The live check records every group send and rejects any extra output or duplicate table. Separate table-only receipts allow this corrected test to run without changing earlier test receipts.
 
+## Preview the role-board image (milestone 3)
+
+Run `npm run test:whatsapp:image` to create a fictional board PNG and send it with its source table to the paired Secretary self-chat. It sends nothing to a group. On your phone using mobile data, find `the helper — FICTIONAL BOARD PREVIEW` and compare all names in the image to the source-table caption, especially the three speaker/evaluator pairings and Open roles.
+
+The renderer draws text directly from the board data, using bundled Inter rather than AI image generation. It follows the local reference's blue sections, red table rows, role order, and closing message. Long names wrap and rows grow as needed. Unknown or missing layout roles fail rather than disappear. The test uses a fictional club badge, meeting, and members; the real reference file is ignored by git.
+
+The PNG and delivery receipt stay under `~/.hermes/the-helper/`. The runner checks the returned image checksum, caption, and self-chat destination, and skips a completed identical preview. Scheduled approval and group image posting are later milestones.
+
+The Inter font is from the official [Inter repository](https://github.com/rsms/inter), distributed under the bundled SIL Open Font License in `assets/fonts/Inter-LICENSE.txt`.
+
 ## Limits and local state
 
 The runner accepts fictional data only, limits input to 300 messages, requests a maximum of 500 output tokens, disables request retries, and records at most 100 requests per rolling hour in a locked laptop file. Its $5 local guard reserves a conservative API-equivalent estimate; Codex subscription allowance is controlled by the signed-in account, rather than an API billing limit.

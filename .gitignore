@@ -7,3 +7,6 @@ dist/
 .convex/
 __pycache__/
 *.pyc
+
+# Local reference contains real club details; never publish it.
+roleboard.heic
