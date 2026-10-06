@@ -12,6 +12,7 @@ const { sendTestGroupBoard } = require('../src/preview-delivery.cjs');
 const { createMessageAckTracker } = require('../src/message-ack.cjs');
 const { isSecretaryChat } = require('../src/approval-inbox.cjs');
 const { assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
+const { sendPostConfirmation } = require('../src/post-confirmation.cjs');
 const stateDir = join(homedir(), '.hermes', 'the-helper');
 const statePath = join(stateDir, 'approval-state.json');
 const lockPath = join(stateDir, 'group-post.lock');
@@ -61,7 +62,7 @@ try {
  }
  if(decision === 'complete') status('The approved board was already posted; no duplicate sent.');
  if(decision === 'uncertain' && !state.groupPost?.id) throw new Error('An earlier send is uncertain. Check Test_group before retrying; no automatic duplicate was sent.');
- if(decision === 'send' || (decision === 'uncertain' && state.groupPost?.id)) {
+ if(decision === 'send' || (decision === 'uncertain' && state.groupPost?.id) || (decision === 'complete' && state.groupPost.secretaryConfirmation?.status !== 'sent')) {
   const bridgeDir = join(homedir(),'.hermes','hermes-agent','scripts','whatsapp-bridge');
   const requireBridge = createRequire(join(bridgeDir,'package.json'));
   const baileys = await import(pathToFileURL(requireBridge.resolve('@whiskeysockets/baileys')).href);
@@ -84,6 +85,7 @@ try {
   });
   // Re-read approval just before sending, so an edit or cancellation cannot use stale data.
   state = JSON.parse(await readFile(statePath,'utf8'));
+  if (decision !== 'complete') {
   const recovering = decision === 'uncertain';
   assert.equal(postingDecision(state,target,hash),recovering ? 'uncertain' : 'send');
   if (!recovering) {
@@ -103,6 +105,9 @@ try {
    assertPrivateSendReceipt(sent,secretaryId); await acknowledgements.wait(sent.key.id);
    throw error;
   }
+  }
+  await sendPostConfirmation({ state, secretaryId, socket: sock, acknowledgements, save });
+  status('Private posting confirmation and request to check for edits acknowledged by WhatsApp.');
  }
 } catch(error) { status(error.message); process.exitCode=1; }
 finally {

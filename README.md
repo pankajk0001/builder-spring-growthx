@@ -77,3 +77,5 @@ Milestone 1 was posted and checked through WhatsApp, and the user confirmed the 
 ### Posting an approved board (milestone 5)
 
 Run `npm run test:whatsapp:post` to post only when the approved time has arrived. Add `-- --watch` to wait on this laptop; it must stay awake and connected. The runner uses only Test_group and fictional data, sends the approved image once, and waits for WhatsApp acknowledgement. A saved uncertain attempt blocks automatic resends; when an image receipt exists, rerunning checks that existing receipt without sending another image. Use `-- --post-now-test` only after the Secretary explicitly chooses an immediate test post; the previous selected time is preserved in the private record. Credentials and posting records stay outside the repository.
+
+After verified group delivery, the helper privately confirms the post to the Secretary and asks them to check for edits. The confirmation is saved and acknowledged separately; rerunning does not repeat either the board or the completed confirmation. Post-publication correction handling remains milestone 6.

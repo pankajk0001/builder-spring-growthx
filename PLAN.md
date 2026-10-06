@@ -108,4 +108,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - The laptop runner can wait with --watch; the laptop must remain awake and connected. The user authorized an immediate test post, with the original selected time retained in the private audit record.
 - Posted the exact approved square image to Test_group. Fixed group acknowledgement handling to use participant delivery receipts, recovered the existing receipt without resending, and verified delivery. All 75 tests pass; rerunning sends no duplicate. The user confirmed seeing the image in Test_group on the phone; milestone 5 is complete.
 
+## Milestone 5 private posting confirmation
+
+- User confirmed the repeat posting check on the phone, then requested a private success message asking the Secretary to check for needed edits.
+- Send the private review request only after verified group delivery. Save its receipt and wait for acknowledgement; completed reruns send neither another board nor another confirmation.
+- All 79 tests pass. The private confirmation was acknowledged in Secretary self-chat without another group image. Phone confirmation is pending; handling post-publication corrections remains milestone 6.
+
 ## Parked list
