@@ -14,6 +14,7 @@ const { assertPrivateSendReceipt } = require('../src/note-delivery.cjs');
 const { createApprovalRequest, applyApprovalMessage, describeTime } = require('../src/approval-flow.cjs');
 const { secretaryCommand, isSecretaryChat } = require('../src/approval-inbox.cjs');
 const { createMessageAckTracker } = require('../src/message-ack.cjs');
+const { assertApprovalSource } = require('../src/approval-resume.cjs');
 const fixture = require('../test/fixtures/milestone-3.cjs');
 const stateDir = join(homedir(), '.hermes', 'the-helper');
 const target = JSON.parse(await readFile(join(stateDir, 'test-group.json'), 'utf8'));
@@ -23,7 +24,6 @@ assert.ok(fixture.board.every(row => row.member === null || row.member.endsWith(
 let rendered = renderBoardImage(fixture);
 let boardHash = createHash('sha256').update(rendered.png).digest('hex');
 const confirmedPreview = JSON.parse(await readFile(join(stateDir, 'milestone-3-receipt.json'), 'utf8'));
-if (!confirmedPreview.phoneConfirmed || confirmedPreview.sha256 !== boardHash) throw new Error('Confirm the current board preview on the phone before requesting approval.');
 const statePath = join(stateDir, 'approval-state.json');
 const status = text => process.stdout.write(text + '\n');
 console.log = console.info = console.warn = () => {};
@@ -35,16 +35,16 @@ const { state: auth, saveCreds } = await baileys.useMultiFileAuthState(target.se
 const secretaryId = baileys.jidNormalizedUser(auth.creds.me?.id || '');
 const secretaryLid = auth.creds.me?.lid ? baileys.jidNormalizedUser(auth.creds.me.lid) : null;
 assert.match(secretaryId, /^\d+@s\.whatsapp\.net$/);
-assert.equal(confirmedPreview.secretaryId, secretaryId);
 let approval;
 try { approval = JSON.parse(await readFile(statePath, 'utf8')); }
 catch (error) { if (error.code !== 'ENOENT') throw error; }
 const sameIdentity = approval?.secretaryId === secretaryId && approval?.targetGroupId === target.groupId;
-if (sameIdentity && approval.board && approval.meeting) {
+if (approval?.board && approval?.meeting) {
   assert.ok(approval.board.every(row => row.member === null || row.member.endsWith(' Example')));
   rendered = renderBoardImage(approval);
   boardHash = createHash('sha256').update(rendered.png).digest('hex');
 }
+assertApprovalSource({ saved: approval, currentHash: boardHash, secretaryId, targetGroupId: target.groupId, receipt: confirmedPreview });
 const freshEditCheck = process.argv.includes('--edit-check');
 if (freshEditCheck && approval) {
   await writeFile(join(stateDir, 'approval-before-edit-check.json'), JSON.stringify(approval, null, 2) + '\n', { mode: 0o600 });
