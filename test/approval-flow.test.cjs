@@ -79,6 +79,16 @@ test('EDIT before approval asks for a correction and invalidates any chosen time
   assert.equal(result.state.approvedBoardHash, null);
   assert.match(result.reply, /Timer: Zara Example/);
 });
+test('EDIT includes the current roles table before correction instructions', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  const state = { ...start(), ...structuredClone(fixture) };
+  state.board.find(row => row.role === 'Timer').member = 'Zara Example';
+  const result = send(state, 'EDIT');
+  assert.match(result.reply, /Timer\s+\| Zara Example/);
+  assert.ok(result.reply.indexOf('Role board — table view') < result.reply.indexOf('What would you like to change?'));
+  assert.deepEqual(result.state.board, state.board);
+  assert.equal(result.preview, undefined);
+});
 test('a correction generates a new image hash and requires fresh approval', () => {
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };

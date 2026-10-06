@@ -164,3 +164,8 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Repeated the restart check and the user confirmed the restored roles and names on the phone; milestone 7 is complete.
 
 ## Parked list
+
+## EDIT table confirmation
+
+- EDIT now shows the latest roles table in the same private reply as correction instructions, before and after posting. It preserves the board and existing group delivery record and sends no image until corrections are entered.
+- All 118 tests pass. The user confirmed the table appears after EDIT in WhatsApp self-chat.

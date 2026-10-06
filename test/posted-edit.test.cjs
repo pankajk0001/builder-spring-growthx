@@ -39,6 +39,12 @@ test('removed speaker pair survives preview approval without becoming Open',()=>
  const approved=send(s,'APPROVE');assert.equal(approved.state.status,'approved');assert.equal(approved.state.board.find(r=>r.role==='Speaker 3').removed,true);
  const cancelled=send(s,'CANCEL');assert.equal(cancelled.state.board.find(r=>r.role==='Speaker 2').removed,undefined);
 });
+test('EDIT after posting shows the latest table and preserves the published receipt',()=>{
+ const s=start();s.board.find(r=>r.role==='Timer').member='Zara Example';
+ s.boardHash=createHash('sha256').update(renderBoardImage(s).png).digest('hex');
+ const result=send(s,'EDIT');assert.match(result.reply,/Role board — table view/);assert.match(result.reply,/Timer\s+\| Zara Example/);
+ assert.equal(result.preview,undefined);assert.deepEqual(result.state.groupPost,s.groupPost);assert.deepEqual(result.state.board,s.board);
+});
 test('TABLE shows the current board and editing options without changing approval or sending a preview',()=>{
  const s=start();const result=send(s,'TABLE');assert.match(result.reply,/Role board — table view/);assert.match(result.reply,/Timer\s+\| Mira Example/);assert.match(result.reply,/Reply EDIT/);
  assert.equal(result.preview,undefined);assert.equal(result.state.status,s.status);assert.equal(result.state.approvedBoardHash,s.approvedBoardHash);assert.deepEqual(result.state.board,s.board);assert.deepEqual(result.state.groupPost,s.groupPost);
