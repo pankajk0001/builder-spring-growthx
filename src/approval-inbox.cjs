@@ -15,7 +15,7 @@ function secretaryCommand(event, { secretaryId, secretaryLid, startedAt, ownIds 
   if (!Number.isFinite(timestamp) || timestamp < Math.floor(startedAt / 1000) * 1000) return null;
   const body = event.content;
   const text = body?.conversation ?? body?.extendedTextMessage?.text;
-  if (typeof text !== 'string' || !text.trim() || text.length > 200 || text.startsWith('the helper —')) return null;
+  if (typeof text !== 'string' || !text.trim() || text.length > 5000 || text.startsWith('the helper —')) return null;
   return { id: message.key.id, chatId: secretaryId, senderId: secretaryId, text,
     replyTo: body?.extendedTextMessage?.contextInfo?.stanzaId || null };
 }

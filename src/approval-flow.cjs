@@ -54,13 +54,13 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
     return { state: next, reply: 'That reply refers to an older message. Please check and approve the latest board preview.' };
   }
   if (command === 'cancel') {
-    return { state: { ...next, status: 'cancelled', postAt: null, approvedBoardHash: null },
+    return { state: { ...next, status: 'cancelled', postAt: null, approvedBoardHash: null, pendingEdits: null },
       reply: 'Approval cancelled. Nothing has been posted to the group.' };
   }
   if (command === 'edit') {
     return { state: { ...next, status: 'awaiting_edit', postAt: null, approvedBoardHash: null, approvedAt: null,
-      finalReplyServerAckVerified: false, flowVerified: false },
-      reply: 'What would you like to change?\nSend one correction, like Timer: Noel Example or Timer: Open.\nYou can also change Club, Meeting number, Meeting date, or Meeting time.' };
+      finalReplyServerAckVerified: false, flowVerified: false, pendingEdits: null },
+      reply: 'What would you like to change?\nSend all corrections in one message, one per line. For example:\nTimer: Noel Example\nListener: Pia Example\n\nUse Open to reopen a role. You can also change Club, Meeting number, Meeting date, or Meeting time.' };
   }
   if (state.status === 'awaiting_edit') {
     const { editBoard } = require('./board-edit.cjs');
@@ -68,12 +68,23 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
     const { createHash } = require('node:crypto');
     let edited, boardHash;
     try {
-      edited = editBoard(state, message.text, { testOnly: state.testOnly === true });
+      const replacements = message.text.split(/[\r\n;]+/).map(line => line.trim()).filter(Boolean);
+      const pending = state.pendingEdits;
+      const text = pending ? [...pending.validCorrections, ...replacements,
+        ...pending.invalidCorrections.slice(replacements.length).map(item => item.line)].join('\n') : message.text;
+      edited = editBoard(state, text, { testOnly: state.testOnly === true });
       boardHash = createHash('sha256').update(renderBoardImage(edited).png).digest('hex');
-    } catch (error) { return { state: next, reply: error.message }; }
+    } catch (error) {
+      if (error.invalidCorrections) return {
+        state: { ...next, pendingEdits: { validCorrections: error.validCorrections, invalidCorrections: error.invalidCorrections } },
+        reply: 'Please correct these lines:\n' + error.invalidCorrections.map((item, i) => `${i + 1}. “${item.line}”\n${item.reason}`).join('\n\n') +
+          '\n\nResend only the corrected lines, in the order shown. Your valid corrections are kept; the board will update once every correction is valid.',
+      };
+      return { state: next, reply: error.message };
+    }
     return { state: { ...next, board: edited.board, meeting: edited.meeting, boardHash, status: 'awaiting_approval',
       postAt: null, approvedBoardHash: null, approvedAt: null, previewReceipt: null, finalReplyServerAckVerified: false, flowVerified: false,
-      editCount: (state.editCount || 0) + 1, lastEditedField: edited.changedField }, preview: true,
+      editCount: (state.editCount || 0) + 1, lastEditedField: edited.changedField, lastEditedFields: edited.changedFields, pendingEdits: null }, preview: true,
       reply: `Updated ${edited.changedField}. Earlier approval and posting time are cleared.\nCheck this new preview, then reply APPROVE, EDIT, or CANCEL.` };
   }
   if (state.status === 'awaiting_approval') {

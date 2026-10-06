@@ -20,7 +20,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 1. Read WhatsApp chatter and the current role board, then show the updated board in a table (verified with made-up data in Test_group).
 - [x] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom (verified with fictional data in Test_group and confirmed on the phone).
 - [x] 3. Generate the role board as an image with the same layout and every name in the correct slot (square preview confirmed directly in WhatsApp self-chat).
-- [ ] 4. Get the Secretary's approval to post the board at the time they select.
+- [x] 4. Get the Secretary's approval to post the board at the time they select (confirmed in Secretary self-chat).
 - [ ] 5. Post the board in the WhatsApp group.
 - [ ] 6. Let the Secretary edit a role on the board.
 - [ ] 7. Close and reopen the helper, and confirm the board is still there.
@@ -90,15 +90,15 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Ask one question at a time: approval, date and 24-hour time in India time, then CONFIRM after displaying the exact date/time and Test_group destination.
 - Bind final approval to the preview's image hash. Reject other people, group messages, old history, duplicate events, invalid/past dates, and confirmation after the selected time has passed. A changed board clears earlier approval and time.
 - Save state and pending private replies atomically outside the repository. The 15-minute test listener resumes the saved request on rerun.
-- All 53 automated tests pass. Real phone replies advanced through APPROVE, time selection, and CONFIRM. Fixed device-specific self-chat addresses, fresh delayed events, and premature connection shutdown after the final reply. The final confirmation was resent and acknowledged by WhatsApp; awaiting the user’s phone check; no group posting or delivery scheduler is enabled in this milestone.
+- All 53 automated tests pass. Real phone replies advanced through APPROVE, time selection, and CONFIRM. Fixed device-specific self-chat addresses, fresh delayed events, and premature connection shutdown after the final reply. The final confirmation was resent and acknowledged by WhatsApp; the user confirmed the phone flow; no group posting or delivery scheduler is enabled in this milestone.
 
 ## Pre-approval editing brought forward
 
 - User approved bringing pre-approval editing forward from milestone 6.
-- Preview offers APPROVE, EDIT, or CANCEL. EDIT asks for one correction such as Timer: Noel Example or Timer: Open; existing role assignments and club/meeting details can be corrected.
+- Preview offers APPROVE, EDIT, or CANCEL. EDIT asks for corrections such as Timer: Noel Example or Timer: Open; several corrections can be sent together, one per line or separated by semicolons; existing role assignments and club/meeting details can be corrected.
 - A correction generates a new square preview and clears all previous approval and posting-time fields. The changed image must be approved again, with a new date/time confirmation. Quoted replies to older previews cannot approve the new one.
 - Live checks use made-up names ending Example and fictional club names containing Example. Existing approved test state was archived locally before starting a fresh edit check.
-- All 63 tests pass; the live EDIT command was received from the phone. Correction, regenerated image and renewed approval phone check are in progress.
+- All 70 tests pass. The live single correction reopened Timer and produced a square preview acknowledged by WhatsApp. The user requested several corrections at once; batch validation is atomic and produces one preview. Invalid corrections are quoted with their reason; valid lines are retained privately so only the invalid lines need to be resent. Partial retries keep remaining invalid lines unresolved. The user confirmed the live multi-correction and invalid-line retry flow on the phone. Saved state is approved, with no unresolved corrections or pending replies; renewed approval and final WhatsApp acknowledgement are verified.
 - Post-publication edits remain in milestone 6; this addition covers editing before approval only.
 
 ## Parked list

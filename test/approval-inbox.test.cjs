@@ -23,6 +23,13 @@ test('a delayed self-chat command newer than the active request is accepted', ()
   input.message.messageTimestamp -= 60;
   assert.equal(secretaryCommand(input, config), null);
 });
+test('a multiline correction message longer than 200 characters reaches the edit flow', () => {
+  const input = event();
+  input.content.conversation = ['TMOD', 'Timer', 'Listener', 'Grammarian', 'Movie-Master', 'Speaker 1', 'Evaluator 1', 'Speaker 2']
+    .map(role => `${role}: Fictional Participant Example`).join('\n');
+  assert.ok(input.content.conversation.length > 200);
+  assert.equal(secretaryCommand(input, config).text, input.content.conversation);
+});
 test('history, other people, group messages, and the helper itself cannot give approval', () => {
   const changes = [
     e => { e.type = 'history'; },

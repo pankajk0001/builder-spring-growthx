@@ -124,3 +124,46 @@ test('after an edit survives saving, approval binds to the corrected image and r
   assert.equal(state.approvedBoardHash, correctedHash);
   assert.equal(state.postAt, '2026-10-08T15:30:00.000Z');
 });
+test('a batch of corrections produces one new preview and rejects the whole batch on an invalid field', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  let state = { ...start(), ...structuredClone(fixture) };
+  state = send(state, 'EDIT').state;
+  const invalid = send(state, 'Timer: Noel Example\nMissing Role: Pia Example');
+  assert.equal(invalid.state.status, 'awaiting_edit');
+  assert.deepEqual(invalid.state.board, fixture.board);
+  assert.equal(invalid.state.boardHash, hash);
+  assert.equal(invalid.preview, undefined);
+  const valid = send(state, 'Timer: Noel Example\nListener: Pia Example');
+  assert.equal(valid.preview, true);
+  assert.equal(valid.state.editCount, 1);
+  assert.deepEqual(valid.state.lastEditedFields, ['Timer', 'Listener']);
+  assert.equal(valid.state.postAt, null);
+});
+test('the helper quotes an invalid correction and retains valid lines for the retry', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  let state = { ...start(), ...structuredClone(fixture) };
+  state = send(state, 'EDIT').state;
+  const invalid = send(state, 'Timer: Noel Example\nMeeting time: 25:10');
+  assert.match(invalid.reply, /Meeting time: 25:10/);
+  assert.deepEqual(invalid.state.board, fixture.board);
+  assert.deepEqual(invalid.state.pendingEdits.validCorrections, ['Timer: Noel Example']);
+  const retry = send(invalid.state, 'Meeting time: 15:45');
+  assert.equal(retry.preview, true);
+  assert.equal(retry.state.board.find(row => row.role === 'Timer').member, 'Noel Example');
+  assert.equal(retry.state.meeting.time, '3:45 PM');
+  assert.equal(retry.state.pendingEdits, null);
+});
+test('correcting one of two invalid lines keeps the other unresolved and sends no preview yet', () => {
+  const fixture = require('./fixtures/milestone-3.cjs');
+  let state = { ...start(), ...structuredClone(fixture) };
+  state = send(state, 'EDIT').state;
+  state = send(state, 'Timer: Noel Example\nMeeting time: 25:10\nMeeting date: 2026-02-30').state;
+  const partial = send(state, 'Meeting time: 15:45');
+  assert.equal(partial.state.status, 'awaiting_edit');
+  assert.equal(partial.preview, undefined);
+  assert.match(partial.reply, /Meeting date: 2026-02-30/);
+  const complete = send(partial.state, 'Meeting date: 2026-10-18');
+  assert.equal(complete.preview, true);
+  assert.equal(complete.state.meeting.time, '3:45 PM');
+  assert.equal(complete.state.meeting.date, '18 October 2026');
+});

@@ -21,10 +21,29 @@ test('meeting details can be corrected with validated dates and times', () => {
   assert.equal(editBoard(fixture, 'Meeting date: 2026-10-18').meeting.date, '18 October 2026');
   assert.equal(editBoard(fixture, 'Meeting time: 15:45').meeting.time, '3:45 PM');
 });
-test('unknown fields, ambiguous multi-edits, and impossible meeting details cannot change the board', () => {
-  for (const text of ['Noel should do that one', 'Helper: Noel Example', 'Timer: Noel Example; Listener: Pia Example', 'Timer: Noel Example\nListener: Pia Example', 'Meeting date: 2026-02-30', 'Meeting time: 25:10', 'Meeting number: abc']) {
+test('unknown fields and impossible meeting details cannot change the board', () => {
+  for (const text of ['Noel should do that one', 'Helper: Noel Example', 'Meeting date: 2026-02-30', 'Meeting time: 25:10', 'Meeting number: abc']) {
     assert.throws(() => editBoard(fixture, text));
   }
+});
+test('several role and meeting corrections can be applied in one message', () => {
+  const edited = editBoard(fixture, 'Timer: Noel Example\nListener: Pia Example\nMeeting time: 15:45');
+  assert.equal(edited.board.find(row => row.role === 'Timer').member, 'Noel Example');
+  assert.equal(edited.board.find(row => row.role === 'Listener').member, 'Pia Example');
+  assert.equal(edited.meeting.time, '3:45 PM');
+  assert.equal(edited.changedFields.length, 3);
+});
+test('semicolon-separated corrections also work, and an invalid batch changes nothing', () => {
+  const original = structuredClone(fixture);
+  const edited = editBoard(fixture, 'Timer: Open; Evaluator 2: Pia Example');
+  assert.equal(edited.board.find(row => row.role === 'Timer').member, null);
+  assert.equal(edited.board.find(row => row.role === 'Evaluator 2').member, 'Pia Example');
+  assert.throws(() => editBoard(fixture, 'Timer: Noel Example\nMeeting date: 2026-02-30'));
+  assert.deepEqual(fixture, original);
+});
+test('two conflicting corrections for the same field cannot be guessed', () => {
+  assert.throws(() => editBoard(fixture, 'Timer: Noel Example\nTimer: Pia Example'), /appears more than once/);
+  assert.throws(() => editBoard(fixture, 'Date: 2026-10-18\nMeeting date: 2026-10-19'), /appears more than once/);
 });
 test('the live fictional test refuses non-example names and non-example club details', () => {
   assert.throws(() => editBoard(fixture, 'Timer: Unspecified Person', { testOnly: true }), /made-up test name/);

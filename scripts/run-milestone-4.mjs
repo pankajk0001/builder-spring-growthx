@@ -150,6 +150,14 @@ try {
     status('Verified the exact square approval preview in Secretary self-chat.');
   }
   await flushOutbox();
+  if (process.argv.includes('--invalid-edit-check') && !['approved', 'cancelled'].includes(approval.status)) {
+    approval.outbox.push({ text: 'Invalid-correction check is ready. Reply EDIT, then send these two lines together:\nTimer: Noel Example\nMeeting time: 25:10\n\nI will quote the invalid time and keep the valid Timer correction. You can then resend only the corrected time.' });
+    await save(); await flushOutbox();
+  }
+  if (process.argv.includes('--batch-edit-check') && !['approved', 'cancelled'].includes(approval.status)) {
+    approval.outbox.push({ text: 'Multiple corrections are now enabled. Reply EDIT, then send both lines together in one message:\nTimer: Noel Example\nListener: Pia Example\n\nI will return one corrected preview for you to approve.' });
+    await save(); await flushOutbox();
+  }
   if (process.argv.includes('--diagnose') && approval.status === 'awaiting_approval') {
     approval.outbox.push({ text: 'The self-chat reply check is active again. Please reply APPROVE to this message to test your phone reply.' });
     await save(); await flushOutbox();

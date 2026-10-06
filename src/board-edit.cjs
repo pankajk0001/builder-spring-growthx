@@ -1,6 +1,6 @@
 const { validateInput } = require('./role-board.cjs');
 
-function editBoard({ board, meeting }, text, { testOnly = false } = {}) {
+function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   validateInput(board, []);
   if (typeof text !== 'string' || /[\r\n;]/.test(text)) throw new Error('Send one correction at a time, like Timer: Noel Example.');
   const match = /^\s*([^:]+):\s*(.+)\s*$/.exec(text);
@@ -13,7 +13,7 @@ function editBoard({ board, meeting }, text, { testOnly = false } = {}) {
     if (value.includes(':')) throw new Error('Send one role correction at a time, like Timer: Noel Example.');
     if (testOnly && !/^(open|tbd)$/i.test(value) && !value.endsWith(' Example')) throw new Error('Use a made-up test name ending in Example, or Open.');
     row.member = /^(open|tbd)$/i.test(value) ? null : value;
-    return { ...updated, changedField: row.role };
+    return { ...updated, changedField: row.role, fieldId: `role:${row.role}` };
   }
   const fields = { club: 'club', 'club name': 'club', 'meeting number': 'number', 'meeting date': 'date', date: 'date', 'meeting time': 'time', time: 'time' };
   const key = fields[field];
@@ -36,6 +36,41 @@ function editBoard({ board, meeting }, text, { testOnly = false } = {}) {
     else throw new Error('Use a valid meeting time like 14:30 or 2:30 PM.');
   }
   updated.meeting[key] = normalized;
-  return { ...updated, changedField: field };
+  return { ...updated, changedField: field, fieldId: `meeting:${key}` };
+}
+function editBoard(input, text, options = {}) {
+  if (typeof text !== 'string' || text.length > 10000) throw new Error('Send corrections in a shorter message.');
+  const corrections = [...new Set(text.split(/[\r\n;]+/).map(line => line.trim()).filter(Boolean))];
+  if (!corrections.length || corrections.length > 25) throw new Error('Send between 1 and 25 corrections, one per line.');
+  const byField = new Map(), invalidCorrections = [];
+  for (const correction of corrections) {
+    try {
+      const edited = editSingleField(input, correction, options);
+      const records = byField.get(edited.fieldId) || [];
+      records.push({ line: correction, edited, signature: JSON.stringify({ board: edited.board, meeting: edited.meeting }) });
+      byField.set(edited.fieldId, records);
+    } catch (error) { invalidCorrections.push({ line: correction, reason: error.message }); }
+  }
+  const validCorrections = [];
+  for (const records of byField.values()) {
+    if (new Set(records.map(record => record.signature)).size > 1) {
+      invalidCorrections.push({ line: records.map(record => record.line).join('; '),
+        reason: `${records[0].edited.changedField} appears more than once. Send one new value for that field.` });
+    } else validCorrections.push(records[0].line);
+  }
+  if (invalidCorrections.length) {
+    const error = new Error(invalidCorrections.map(item => `${item.line}: ${item.reason}`).join('\n'));
+    error.invalidCorrections = invalidCorrections;
+    error.validCorrections = validCorrections;
+    throw error;
+  }
+  let current = input;
+  const changedFields = [];
+  for (const correction of validCorrections) {
+    const edited = editSingleField(current, correction, options);
+    changedFields.push(edited.changedField);
+    current = { board: edited.board, meeting: edited.meeting };
+  }
+  return { ...current, changedFields, changedField: changedFields.join(', ') };
 }
 module.exports = { editBoard };
