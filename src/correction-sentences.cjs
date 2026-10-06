@@ -13,7 +13,7 @@ function sentenceCorrections(board, text) {
  for(const part of parts){
   const forward=new RegExp(`^(?:the\\s+)?(${role}(?:\\s+and\\s+${role})*)(?:\\s+roles?)?\\s+${verb}\\s+(.+)$`,'i').exec(part.trim());
   const reverse=new RegExp(`^(.+?)\\s+(?:has taken|will take|is taking)\\s+(?:the\\s+)?(${role})(?:\\s+role)?$`,'i').exec(part.trim());
-  if(!forward&&!reverse) throw Error('Please name the role and its confirmed holder, like Timer is taken by Noel Example, or Timer: Noel Example.');
+  if(!forward&&!reverse) throw Error('Please name the role and its confirmed holder, like Timer is taken by Zara Example, or Timer: Zara Example.');
   const holder=(forward?forward[2]:reverse[1]).trim();
   if(!/^[\p{L}\p{M}\d'’ .-]+$/u.test(holder)||/\b(and|taken|assigned|filled|by|role)\b/i.test(holder)) throw Error('Please name one confirmed holder for each role, without extra instructions.');
   const selected=forward?forward[1].split(/\s+and\s+/i):[reverse[2]];

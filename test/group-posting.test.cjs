@@ -16,3 +16,7 @@ test('blocks changed boards, unapproved requests and other destinations', () => 
  assert.throws(()=>postingDecision(state,{...target,name:'Other_group'},'abc',Date.parse(state.postAt)));
  assert.throws(()=>postingDecision(state,target,'changed',Date.parse(state.postAt)));
 });
+test('even an approved duplicate-holder board cannot be sent',()=>{
+ const board=[{role:'Timer',member:'Zara Example'},{role:'Listener',member:'zara example'}];
+ assert.throws(()=>postingDecision({...state,board},target,'abc',Date.parse(state.postAt)),/only one role/);
+});

@@ -1,18 +1,19 @@
 const { validateInput } = require('./role-board.cjs');
 const { sentenceCorrections } = require('./correction-sentences.cjs');
+const { duplicateRoleHolders } = require('./role-uniqueness.cjs');
 
 function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   validateInput(board, []);
-  if (typeof text !== 'string' || /[\r\n;]/.test(text)) throw new Error('Send one correction at a time, like Timer: Noel Example.');
+  if (typeof text !== 'string' || /[\r\n;]/.test(text)) throw new Error('Send one correction at a time, like Timer: Zara Example.');
   const match = /^\s*([^:]+):\s*(.+)\s*$/.exec(text);
-  if (!match) throw new Error('Use a field followed by a colon and its new value, like Timer: Noel Example or Timer: Open.');
+  if (!match) throw new Error('Use a field followed by a colon and its new value, like Timer: Zara Example or Timer: Open.');
   const suppliedField = match[1].trim().toLowerCase();
   const field = suppliedField === 'listner' ? 'listener' : suppliedField, value = match[2].trim().replace(/\s+/g, ' ');
   if (!value || value.length > 120) throw new Error('Use a non-empty value of at most 120 characters.');
   const updated = { board: board.map(row => ({ ...row })), meeting: { ...meeting } };
   const row = updated.board.find(row => row.role.toLowerCase() === field);
   if (row) {
-    if (value.includes(':')) throw new Error('Send one role correction at a time, like Timer: Noel Example.');
+    if (value.includes(':')) throw new Error('Send one role correction at a time, like Timer: Zara Example.');
     if (testOnly && !/^(open|tbd)$/i.test(value) && !value.endsWith(' Example')) throw new Error('Use a made-up test name ending in Example, or Open.');
     row.member = /^(open|tbd)$/i.test(value) ? null : value;
     return { ...updated, changedField: row.role, fieldId: `role:${row.role}` };
@@ -65,18 +66,29 @@ function editBoard(input, text, options = {}) {
         reason: `${records[0].edited.changedField} appears more than once. Send one new value for that field.` });
     } else validCorrections.push(records[0].line);
   }
-  if (invalidCorrections.length) {
-    const error = new Error(invalidCorrections.map(item => `${item.line}: ${item.reason}`).join('\n'));
-    error.invalidCorrections = invalidCorrections;
-    error.validCorrections = validCorrections;
-    throw error;
-  }
   let current = input;
   const changedFields = [];
   for (const correction of validCorrections) {
     const edited = editSingleField(current, correction, options);
     changedFields.push(edited.changedField);
     current = { board: edited.board, meeting: edited.meeting };
+  }
+  const conflictingLines = new Set();
+  for (const conflict of duplicateRoleHolders(current.board)) {
+    const changedRoles = conflict.roles.filter(role => byField.has(`role:${role}`));
+    const blockedRoles = changedRoles.length ? changedRoles : conflict.roles.slice(1);
+    for (const role of blockedRoles) {
+      const record = byField.get(`role:${role}`)?.[0];
+      const line = record?.line || `${role}: ${conflict.member}`;
+      conflictingLines.add(line);
+      invalidCorrections.push({ line, reason: `${conflict.member} is assigned to ${conflict.roles.join(' and ')}. Each person can hold only one role; choose a different person or reopen their other role.` });
+    }
+  }
+  if (invalidCorrections.length) {
+    const error = new Error(invalidCorrections.map(item => `${item.line}: ${item.reason}`).join('\n'));
+    error.invalidCorrections = invalidCorrections;
+    error.validCorrections = validCorrections.filter(line => !conflictingLines.has(line));
+    throw error;
   }
   return { ...current, changedFields, changedField: changedFields.join(', ') };
 }

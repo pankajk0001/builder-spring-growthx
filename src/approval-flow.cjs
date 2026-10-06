@@ -50,6 +50,12 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
   if (['approved', 'cancelled'].includes(state.status)) return { state, reply: null };
   const next = { ...state, processedIds: [...state.processedIds, message.id].slice(-300) };
   const command = message.text.trim().toLowerCase();
+  if (['approve', 'confirm'].includes(command) && state.board) {
+    const { assertUniqueRoleHolders } = require('./role-uniqueness.cjs');
+    try { assertUniqueRoleHolders(state.board); }
+    catch (error) { return { state: { ...next, status: 'awaiting_edit', approvedBoardHash: null, postAt: null,
+      flowVerified: false, finalReplyServerAckVerified: false, pendingEdits: null }, reply: error.message + '\nPlease send corrections before approving this board.' }; }
+  }
   if (command === 'approve' && message.replyTo && state.previewReceipt && message.replyTo !== state.previewReceipt.id) {
     return { state: next, reply: 'That reply refers to an older message. Please check and approve the latest board preview.' };
   }
@@ -60,7 +66,7 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
   if (command === 'edit') {
     return { state: { ...next, status: 'awaiting_edit', postAt: null, approvedBoardHash: null, approvedAt: null,
       finalReplyServerAckVerified: false, flowVerified: false, pendingEdits: null },
-      reply: 'What would you like to change?\nSend all corrections in one message, one per line. For example:\nTimer: Noel Example\nListener: Pia Example\n\nUse Open to reopen a role. You can also change Club, Meeting number, Meeting date, or Meeting time.' };
+      reply: 'What would you like to change?\nSend all corrections in one message, one per line. For example:\nTimer: Zara Example\nListener: Finn Example\n\nUse Open to reopen a role. You can also change Club, Meeting number, Meeting date, or Meeting time.' };
   }
   if (state.status === 'awaiting_edit') {
     const { editBoard } = require('./board-edit.cjs');

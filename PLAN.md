@@ -121,4 +121,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Keep the original group post while a correction is pending. Save all state privately; only fictional test data and the authorized Secretary self-chat are used. Live phone verification is pending.
 - Fixed the reported Listner spelling: it maps to the existing Listener slot. Explicit assignment sentences also work; uncertain wording is rejected. All 87 tests pass. Replayed the user’s exact fictional Timer/Listener batch into one private preview, visually verified both Noel Example assignments, and received WhatsApp acknowledgement. Corrected group delivery still awaits APPROVE from the phone.
 
+## One person per role correction
+
+- User clarified that one person must not hold multiple roles. Corrections now check the completed board, quote conflicting lines with the other held roles, retain unrelated valid lines, and create no preview until conflicts are resolved.
+- Moving a holder works when their previous role is reopened in the same batch. Names are compared without case or spacing differences. Approval and final group posting both reject a duplicate-holder board saved by an older version.
+- All 93 tests pass. Replayed Timer: Noel Example; Listner: Noel Example and verified both lines were rejected privately because Noel already holds TMOD. No new preview or group image was sent. The private retry prompt was acknowledged; fresh corrected-preview approval still awaits the phone check.
+
 ## Parked list

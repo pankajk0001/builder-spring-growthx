@@ -77,15 +77,15 @@ test('EDIT before approval asks for a correction and invalidates any chosen time
   assert.equal(result.state.status, 'awaiting_edit');
   assert.equal(result.state.postAt, null);
   assert.equal(result.state.approvedBoardHash, null);
-  assert.match(result.reply, /Timer: Noel Example/);
+  assert.match(result.reply, /Timer: Zara Example/);
 });
 test('a correction generates a new image hash and requires fresh approval', () => {
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };
   state = send(state, 'EDIT').state;
-  const result = send(state, 'Timer: Noel Example');
+  const result = send(state, 'Timer: Zara Example');
   assert.equal(result.state.status, 'awaiting_approval');
-  assert.equal(result.state.board.find(row => row.role === 'Timer').member, 'Noel Example');
+  assert.equal(result.state.board.find(row => row.role === 'Timer').member, 'Zara Example');
   assert.notEqual(result.state.boardHash, hash);
   assert.equal(result.state.approvedBoardHash, null);
   assert.equal(result.preview, true);
@@ -96,7 +96,7 @@ test('an invalid correction remains in editing and preserves the board', () => {
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };
   state = send(state, 'EDIT').state;
-  const result = send(state, 'Something: Noel Example');
+  const result = send(state, 'Something: Zara Example');
   assert.equal(result.state.status, 'awaiting_edit');
   assert.deepEqual(result.state.board, fixture.board);
   assert.equal(result.preview, undefined);
@@ -112,7 +112,7 @@ test('after an edit survives saving, approval binds to the corrected image and r
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };
   state = send(state, 'EDIT').state;
-  state = JSON.parse(JSON.stringify(send(state, 'Timer: Noel Example').state));
+  state = JSON.parse(JSON.stringify(send(state, 'Timer: Zara Example').state));
   const correctedHash = state.boardHash;
   const command = (text, id) => {
     state = applyApprovalMessage(state, { id, chatId: secretary, senderId: secretary, text }, correctedHash, now).state;
@@ -128,12 +128,12 @@ test('a batch of corrections produces one new preview and rejects the whole batc
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };
   state = send(state, 'EDIT').state;
-  const invalid = send(state, 'Timer: Noel Example\nMissing Role: Pia Example');
+  const invalid = send(state, 'Timer: Zara Example\nMissing Role: Finn Example');
   assert.equal(invalid.state.status, 'awaiting_edit');
   assert.deepEqual(invalid.state.board, fixture.board);
   assert.equal(invalid.state.boardHash, hash);
   assert.equal(invalid.preview, undefined);
-  const valid = send(state, 'Timer: Noel Example\nListener: Pia Example');
+  const valid = send(state, 'Timer: Zara Example\nListener: Finn Example');
   assert.equal(valid.preview, true);
   assert.equal(valid.state.editCount, 1);
   assert.deepEqual(valid.state.lastEditedFields, ['Timer', 'Listener']);
@@ -143,13 +143,13 @@ test('the helper quotes an invalid correction and retains valid lines for the re
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };
   state = send(state, 'EDIT').state;
-  const invalid = send(state, 'Timer: Noel Example\nMeeting time: 25:10');
+  const invalid = send(state, 'Timer: Zara Example\nMeeting time: 25:10');
   assert.match(invalid.reply, /Meeting time: 25:10/);
   assert.deepEqual(invalid.state.board, fixture.board);
-  assert.deepEqual(invalid.state.pendingEdits.validCorrections, ['Timer: Noel Example']);
+  assert.deepEqual(invalid.state.pendingEdits.validCorrections, ['Timer: Zara Example']);
   const retry = send(invalid.state, 'Meeting time: 15:45');
   assert.equal(retry.preview, true);
-  assert.equal(retry.state.board.find(row => row.role === 'Timer').member, 'Noel Example');
+  assert.equal(retry.state.board.find(row => row.role === 'Timer').member, 'Zara Example');
   assert.equal(retry.state.meeting.time, '3:45 PM');
   assert.equal(retry.state.pendingEdits, null);
 });
@@ -157,7 +157,7 @@ test('correcting one of two invalid lines keeps the other unresolved and sends n
   const fixture = require('./fixtures/milestone-3.cjs');
   let state = { ...start(), ...structuredClone(fixture) };
   state = send(state, 'EDIT').state;
-  state = send(state, 'Timer: Noel Example\nMeeting time: 25:10\nMeeting date: 2026-02-30').state;
+  state = send(state, 'Timer: Zara Example\nMeeting time: 25:10\nMeeting date: 2026-02-30').state;
   const partial = send(state, 'Meeting time: 15:45');
   assert.equal(partial.state.status, 'awaiting_edit');
   assert.equal(partial.preview, undefined);
