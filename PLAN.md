@@ -19,7 +19,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 - [x] 1. Read WhatsApp chatter and the current role board, then show the updated board in a table (verified with made-up data in Test_group).
 - [x] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom (verified with fictional data in Test_group and confirmed on the phone).
-- [ ] 3. Generate the role board as an image with the same layout and every name in the correct slot.
+- [x] 3. Generate the role board as an image with the same layout and every name in the correct slot (square preview confirmed directly in WhatsApp self-chat).
 - [ ] 4. Get the Secretary's approval to post the board at the time they select.
 - [ ] 5. Post the board in the WhatsApp group.
 - [ ] 6. Let the Secretary edit a role on the board.
@@ -73,7 +73,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Every role maps to one explicit slot. Open roles display Open; names wrap and rows expand to prevent overlap. Unknown or missing slots fail instead of silently dropping data.
 - Generated and visually inspected a 1312 × 2062 fictional board containing all 15 roles. WhatsApp confirmed the exact image checksum and source-table caption sent only to the paired Secretary self-chat, without any group sends.
 - All 37 tests pass, including slot mapping, pairing, long names, missing/unknown roles, destination restrictions, and image verification.
-- Awaiting the user's phone check before marking milestone 3 complete or pushing. Approval scheduling and group image posting remain milestones 4 and 5.
+- The user confirmed the layout and names, then confirmed the corrected square preview directly in chat; milestone 3 is complete. Approval scheduling and group image posting remain milestones 4 and 5.
 
 ## Milestone 3 chat-preview correction
 
@@ -81,6 +81,6 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Changed the board to a compact square (1:1), preserving all sections, holders, open roles, and speaker/evaluator pairings. Long names expand the square rather than clipping rows.
 - Visually inspected the 1700 × 1700 preview. Sent the corrected image privately with an explicitly generated full-board thumbnail and image dimensions; WhatsApp confirmed the image checksum, caption, thumbnail and dimensions. No group sends.
 - All 39 tests pass, including square output for long names and refusal to verify a changed thumbnail or wrong dimensions.
-- Awaiting the user's check of the latest square image directly in WhatsApp chat before completing milestone 3 or pushing.
+- The user confirmed the whole downloaded square image is visible directly in WhatsApp chat without opening the gallery; milestone 3 is complete.
 
 ## Parked list
