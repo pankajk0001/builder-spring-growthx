@@ -25,6 +25,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 6. Let the Secretary edit a role on the board (private table, corrections, preview, approval, Test_group delivery and private confirmation checked on the phone).
 - [x] 7. Close and reopen the helper, and confirm the board is still there (restored private table confirmed on the phone).
 - [x] 8. Set a weekly private reminder, catch up once after a missed reminder, prepare a fresh board with open roles, add speakers, and approve its first group post (bounded WhatsApp test confirmed; missed-week behavior covered by tests).
+- [ ] 9. Connect live Test_group role replies to the current board and automatic changed-board posting at 20:00 India time, following the existing product schedule. Implementation approval pending.
 
 ## Milestone 1 approach
 
@@ -171,6 +172,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Reporting correction: inspect every visible role, list all filled roles, and verify the group image against the exact approved board. The earlier speaker-only report omitted Evaluator 1 and Timer; all three assignments were already correctly saved and posted.
 
 ## EDIT table confirmation
+
+## Short scheduled-post verification
+
+- User confirmed the short scheduled post on the phone. Observed no early group send; send began five seconds after the selected time. Exact approved image, group delivery and private confirmation acknowledged. Monday reminder remained unchanged; receipt is stored privately outside the repository.
+- Live group role interpretation is still a gap: milestone 2 runners interpret bounded fictional transcripts; the running weekly helper accepts Secretary self-chat commands but does not interpret member messages or schedule changed-board reposts. PRODUCT.md specifies updates at 20:00 on days with changes through Friday. This connection must be built and checked in Test_group before describing it as automatic.
 
 - EDIT now shows the latest roles table in the same private reply as correction instructions, before and after posting. It preserves the board and existing group delivery record and sends no image until corrections are entered.
 - All 118 tests pass. The user confirmed the table appears after EDIT in WhatsApp self-chat.
