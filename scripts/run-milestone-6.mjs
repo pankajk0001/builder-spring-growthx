@@ -160,6 +160,10 @@ try{
   state.weekly={setupPromptQueued:true};state.editListenerStartedAt=Date.now();
   state.outbox.push({kind:'text',text:'Which day and time should I remind you each week to prepare the first role board? Send a day and 24-hour time, for example Monday 19:00 (India time).'});await save();
  }
+ if(weeklyMode&&state.weekly?.schedule&&!Number.isInteger(state.weekly.meetingDay)&&!state.weekly.meetingDayPromptQueued){
+  state.weekly.meetingDayPromptQueued=true;
+  state.outbox.push({kind:'text',text:'Which day of the week is your meeting? Send just the day, for example Sunday. Any day works. Your saved reminder day and time stay the same.'});await save();
+ }
  await flush();await deliverCorrection();
  if(weeklyMode){const metadata=await sock.groupMetadata(target.groupId);assert.equal(metadata.subject,'Test_group');state=ensureLive(state);await save();}
  if(process.argv.includes('--restart-check')){

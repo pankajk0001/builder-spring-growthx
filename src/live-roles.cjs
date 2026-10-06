@@ -3,28 +3,31 @@ const {isDeepStrictEqual}=require('node:util');
 const {respondToRoles}=require('./role-availability.cjs');
 const {memberKey,assertUniqueRoleHolders}=require('./role-uniqueness.cjs');
 const {renderBoardImage}=require('./board-image.cjs');
+const {meetingCutoff}=require('./meeting-cycle.cjs');
 const OFFSET=330*60000;
 const hashBoard=s=>createHash('sha256').update(renderBoardImage(s).png).digest('hex');
-function endOfWeek(timestamp){
+function updateTime(timestamp,cutoff=Infinity){
  const d=new Date(timestamp+OFFSET);
- return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+5-(d.getUTCDay()||7),20)-OFFSET;
-}
-function updateTime(timestamp){
- const d=new Date(timestamp+OFFSET),day=d.getUTCDay();
- if(day===0||day===6)return null;
  let due=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),20)-OFFSET;
- if(timestamp>=due){if(day===5)return null;due+=86400000;}
+ if(timestamp>=due)due+=86400000;
+ if(due>cutoff)return null;
  return new Date(due).toISOString();
 }
 function ensureLive(state){
  if(state.groupPost?.status!=='sent'||!state.groupPost.deliveryReceiptVerified)return state;
- if(state.live?.basePostId===state.groupPost.id)return state;
+ const cutoff=meetingCutoff(state.meeting.date);
+ if(state.live?.basePostId===state.groupPost.id){
+  if(state.live.windowEnd===cutoff)return state;
+  const live={...state.live,windowEnd:cutoff};
+  if(live.nextAt&&Date.parse(live.nextAt)>cutoff)live.nextAt=null;
+  return {...state,live};
+ }
  const old=state.live;
  const start=Date.parse(state.groupPost.postedAt);
  if(!Number.isFinite(start))throw Error('A dated group delivery receipt is required before listening to members.');
- const sameWeek=old&&start<old.windowEnd;
+ const sameWeek=old&&old.authorization.requestId===state.requestId;
  return {...state,live:{basePostId:state.groupPost.id,authorization:{requestId:state.requestId,initialApprovedHash:state.approvedBoardHash,groupId:state.targetGroupId},
-  startedAt:sameWeek?old.startedAt:start,windowEnd:sameWeek?old.windowEnd:endOfWeek(start),board:structuredClone(state.board),publishedBoard:structuredClone(state.board),
+  startedAt:sameWeek?old.startedAt:start,windowEnd:cutoff,board:structuredClone(state.board),publishedBoard:structuredClone(state.board),
   seen:sameWeek?old.seen:[],inbox:sameWeek?old.inbox:[],posts:sameWeek?old.posts:{},dirty:false,nextAt:null}};
 }
 function groupRoleMessage(event,state,target){
@@ -44,7 +47,7 @@ function groupRoleMessage(event,state,target){
 }
 function enqueueGroupMessage(state,message){
  state=ensureLive(state);const live=state.live;
- if(!live||message.timestamp<live.startedAt||message.timestamp>=live.windowEnd||!updateTime(message.timestamp)||live.seen.includes(message.id))return state;
+ if(!live||message.timestamp<live.startedAt||message.timestamp>=live.windowEnd||!updateTime(message.timestamp,live.windowEnd)||live.seen.includes(message.id))return state;
  if(live.inbox.length>=300){
   if(live.overflowNotified)return state;
   return {...state,live:{...live,overflowNotified:true},outbox:[...(state.outbox||[]),{kind:'text',text:'[ask the secretary to try again in few minutes]'}]};
@@ -72,14 +75,14 @@ function applyLiveBatch(state,messages,decisions){
  }
  assertUniqueRoleHolders(board);
  const dirty=!isDeepStrictEqual(board,live.publishedBoard);
- let nextAt=dirty?(changedAt!==null?updateTime(changedAt):live.nextAt):null;
- if(nextAt&&live.posts[nextAt]?.status==='sent')nextAt=updateTime(Date.parse(nextAt)+1000);
+ let nextAt=dirty?(changedAt!==null?updateTime(changedAt,live.windowEnd):live.nextAt):null;
+ if(nextAt&&live.posts[nextAt]?.status==='sent')nextAt=updateTime(Date.parse(nextAt)+1000,live.windowEnd);
  return {...state,live:{...live,board,dirty,nextAt,inbox:live.inbox.slice(messages.length),pendingBatch:null,retryAt:null,failureNotified:false,overflowNotified:false},
   outbox:[...(state.outbox||[]),...notes.map(text=>({kind:'text',text}))]};
 }
 function dailyDecision(state,now=Date.now()){
  const live=state.live;
- if(!live?.dirty||!live.nextAt)return 'unchanged';
+ if(!live?.dirty||!live.nextAt||isDeepStrictEqual(live.board,live.publishedBoard))return 'unchanged';
  if(state.status!=='approved'||state.editSession||state.groupPost?.status!=='sent')return 'paused';
  if(state.testOnly!==true||live.authorization.groupId!==state.targetGroupId||!live.authorization.initialApprovedHash)throw Error('Automatic changes require initial board approval for this test group.');
  const attempt=live.posts[live.nextAt];

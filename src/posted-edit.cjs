@@ -26,6 +26,14 @@ function applyPostedEditMessage(state, message, hash, now = Date.now()) {
  const result=applyApprovalMessage(state,message,hash,now);
  if(result.preview) return {...result,reply:`Updated ${result.state.lastEditedField}. Check this new preview, then reply APPROVE to post the corrected board now, EDIT for more changes, TABLE to see the roles as a table, or CANCEL.`};
  if(state.status==='awaiting_approval' && command==='approve' && result.state.status==='awaiting_time') {
+  const original=state.editSession.original;
+  if(hash===original.groupPost.hash){
+   const unchanged={...result.state,status:'approved',approvedBoardHash:hash,approvedAt:original.approvedAt,postAt:original.postAt,
+    groupPost:original.groupPost,flowVerified:original.flowVerified,finalReplyServerAckVerified:original.finalReplyServerAckVerified,
+    editSession:null,pendingEdits:null};
+   if(unchanged.live)unchanged.live={...unchanged.live,board:structuredClone(unchanged.board),publishedBoard:structuredClone(unchanged.board),dirty:false,nextAt:null};
+   return {state:unchanged,reply:'The board is unchanged, so I kept its existing post in Test_group.'};
+  }
   const corrected={...result.state,status:'approved',approvedBoardHash:hash,approvedAt:new Date(now).toISOString(),postAt:new Date(now).toISOString(),
    flowVerified:false,finalReplyServerAckVerified:false,editSession:null,postingMode:'correction',
    previousTestPosts:[...(state.previousTestPosts||[]),state.editSession.original.groupPost]};

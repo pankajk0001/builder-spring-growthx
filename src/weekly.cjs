@@ -3,12 +3,12 @@ const {createApprovalRequest,applyApprovalMessage}=require('./approval-flow.cjs'
 const {applyPostedEditMessage}=require('./posted-edit.cjs');
 const {renderBoardImage}=require('./board-image.cjs');
 const {renderTable}=require('./role-board.cjs');
+const {DAYS,parseMeetingDay,nextMeetingDate}=require('./meeting-cycle.cjs');
 const WEEK=7*86400000, OFFSET=330*60000;
-const DAYS=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
 function parseSchedule(text){
  const m=/^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\s+(\d{2}):(\d{2})$/i.exec(text.trim());
  if(!m||+m[2]>23||+m[3]>59)throw Error('Send a day and 24-hour time, like Monday 19:00 (India time).');
- return {day:DAYS.indexOf(m[1].toLowerCase()),time:m[2]+':'+m[3]};
+ return {day:DAYS.findIndex(day=>day.toLowerCase()===m[1].toLowerCase()),time:m[2]+':'+m[3]};
 }
 function nextReminder(schedule,now=Date.now()){
  if(!Number.isInteger(schedule.day)||schedule.day<0||schedule.day>6||!/^([01]\d|2[0-3]):[0-5]\d$/.test(schedule.time))throw Error('Invalid reminder schedule.');
@@ -30,18 +30,16 @@ function queueReminder(state,now=Date.now()){
  return next;
 }
 function startWeeklyBoard(state,now=Date.now()){
+ if(!Number.isInteger(state.weekly?.meetingDay))throw Error('Set your meeting day first, for example Sunday.');
  if(!state.weekly?.pendingWeek)throw Error('No weekly board is waiting.');
  if(state.weekly.activeWeek===state.weekly.pendingWeek)throw Error('This week’s board is already open. Reply TABLE or EDIT.');
  if(state.status!=='cancelled'&&(state.status!=='approved'||state.groupPost?.status!=='sent'||state.editSession))throw Error('Finish or cancel the current draft before starting the next week.');
  const previous=structuredClone(state);delete previous.weekly;delete previous.outbox;
  const board=state.board.map(row=>({...row,member:null}));
  const meeting={...state.meeting};
- const oldDate=Date.parse(meeting.date+' 12:00:00 GMT+0530');
- if(!Number.isFinite(oldDate))throw Error('Correct the meeting date before starting a weekly board.');
  const due=Date.parse(state.weekly.pendingWeek);
- const advance=Math.max(1,Math.floor((due-oldDate)/WEEK)+1);
- meeting.date=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'numeric',month:'long',year:'numeric'}).format(new Date(oldDate+advance*WEEK));
- if(/^\d+$/.test(meeting.number))meeting.number=String(Number(meeting.number)+advance);
+ meeting.date=nextMeetingDate(state.weekly.meetingDay,due);
+ if(/^\d+$/.test(meeting.number))meeting.number=String(Number(meeting.number)+1);
  const boardHash=createHash('sha256').update(renderBoardImage({board,meeting}).png).digest('hex');
  return {...createApprovalRequest({secretaryId:state.secretaryId,boardHash,requestId:randomUUID(),now}),
   targetGroupId:state.targetGroupId,testOnly:state.testOnly,board,meeting,status:'awaiting_edit',postingMode:'weekly',
@@ -56,9 +54,20 @@ function applyWeeklyMessage(state,command,now=Date.now()){
  if(!state.weekly?.schedule){
   try{
    const schedule=parseSchedule(command.text);
-   return {state:{...state,weekly:{...state.weekly,schedule,nextAt:nextReminder(schedule,now)},processedIds:[...state.processedIds,command.id].slice(-300)},
-    reply:'Weekly reminder saved: '+command.text.trim()+' India time. I will remind you privately to prepare a fresh board each week. Keep this laptop awake and connected with the helper running. If it is off, one missed reminder will arrive when you reopen it.'};
+   return {state:{...state,weekly:{...state.weekly,schedule,nextAt:nextReminder(schedule,now),meetingDayPromptQueued:true},processedIds:[...state.processedIds,command.id].slice(-300)},
+    reply:'Weekly reminder saved: '+command.text.trim()+' India time.\n\nWhich day of the week is your meeting? Send just the day, for example Sunday. Any day works.'};
   }catch(error){return {state:{...state,processedIds:[...state.processedIds,command.id].slice(-300)},reply:error.message};}
+ }
+ if(!Number.isInteger(state.weekly.meetingDay)){
+  try{
+   const meetingDay=parseMeetingDay(command.text);
+   if(state.weekly.schedule.day===(meetingDay+6)%7&&state.weekly.schedule.time>='20:00')throw Error('That reminder is after the final update cutoff. Send an earlier reminder day and time, then your meeting day. For example Monday 19:00, then Tuesday.');
+   return {state:{...state,weekly:{...state.weekly,meetingDay},processedIds:[...state.processedIds,command.id].slice(-300)},
+    reply:'Meeting day saved: '+DAYS[meetingDay]+'. New weekly boards will use the next '+DAYS[meetingDay]+' after the reminder. Changed boards post at 20:00 India time on any day up to 20:00 the day before that board’s meeting. Unchanged boards are not reposted. Keep this laptop awake and connected with the helper running. One missed reminder arrives when you reopen it.\n\nYour current board keeps its displayed meeting date; use EDIT to change that date.'};
+  }catch(error){
+   try{const schedule=parseSchedule(command.text);return {state:{...state,weekly:{...state.weekly,schedule,nextAt:nextReminder(schedule,now)},processedIds:[...state.processedIds,command.id].slice(-300)},reply:'Reminder updated. Now send your meeting day, for example Sunday.'};}
+   catch{return {state:{...state,processedIds:[...state.processedIds,command.id].slice(-300)},reply:error.message};}
+  }
  }
  if(text==='start'){
   try{const fresh=startWeeklyBoard(state,now);const item=fresh.outbox.pop();fresh.processedIds=[...fresh.processedIds,command.id].slice(-300);return {state:fresh,reply:item.text};}

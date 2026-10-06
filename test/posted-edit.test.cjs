@@ -45,6 +45,12 @@ test('EDIT after posting shows the latest table and preserves the published rece
  const result=send(s,'EDIT');assert.match(result.reply,/Role board — table view/);assert.match(result.reply,/Timer\s+\| Zara Example/);
  assert.equal(result.preview,undefined);assert.deepEqual(result.state.groupPost,s.groupPost);assert.deepEqual(result.state.board,s.board);
 });
+test('approving an edit with the same image keeps the original post instead of posting it again',()=>{
+ let s=start();s.groupPost.hash=s.boardHash;const original=structuredClone(s.groupPost);
+ s=send(s,'EDIT').state;s=send(s,'Timer: Mira Example').state;
+ const approved=send(s,'APPROVE');assert.equal(approved.state.status,'approved');assert.deepEqual(approved.state.groupPost,original);
+ assert.equal(approved.state.editSession,null);assert.match(approved.reply,/unchanged/);
+});
 test('TABLE shows the current board and editing options without changing approval or sending a preview',()=>{
  const s=start();const result=send(s,'TABLE');assert.match(result.reply,/Role board — table view/);assert.match(result.reply,/Timer\s+\| Mira Example/);assert.match(result.reply,/Reply EDIT/);
  assert.equal(result.preview,undefined);assert.equal(result.state.status,s.status);assert.equal(result.state.approvedBoardHash,s.approvedBoardHash);assert.deepEqual(result.state.board,s.board);assert.deepEqual(result.state.groupPost,s.groupPost);
