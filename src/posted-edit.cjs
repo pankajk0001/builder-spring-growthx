@@ -2,6 +2,15 @@ const { applyApprovalMessage } = require('./approval-flow.cjs');
 function applyPostedEditMessage(state, message, hash, now = Date.now()) {
  if (message?.chatId !== state.secretaryId || message.senderId !== state.secretaryId || !message.id || typeof message.text !== 'string' || state.processedIds.includes(message.id)) return {state,reply:null};
  const command=message.text.trim().toLowerCase();
+ if (command === 'table') {
+  const { renderTable } = require('./role-board.cjs');
+  return { state: { ...state, processedIds: [...state.processedIds, message.id].slice(-300) },
+   reply: 'Role board — table view\n' + renderTable(state.board) + '\n\n' +
+    (state.status === 'awaiting_edit' ? 'Send your corrections together, one per line or separated by semicolons. I will return one updated image preview.' :
+     'Reply EDIT to change roles. Then send corrections together, one per line or separated by semicolons; I will return one updated image preview.') +
+    '\nExamples: Timer: Zara Example; Listener: Finn Example\nSpeaker 2: Remove hides its speaker/evaluator pair and renumbers the remaining pairs. Only APPROVE posts a corrected board.' };
+ }
+
  if (!state.editSession) {
   if(state.status!=='approved' || state.groupPost?.status!=='sent' || !state.groupPost.deliveryReceiptVerified || command!=='edit') return {state,reply:null};
   const result=applyApprovalMessage({...state,status:'awaiting_approval'},message,hash,now);
@@ -15,7 +24,7 @@ function applyPostedEditMessage(state, message, hash, now = Date.now()) {
    reply:'Corrections cancelled. The board already posted in Test_group is unchanged.'};
  }
  const result=applyApprovalMessage(state,message,hash,now);
- if(result.preview) return {...result,reply:`Updated ${result.state.lastEditedField}. Check this new preview, then reply APPROVE to post the corrected board now, EDIT for more changes, or CANCEL.`};
+ if(result.preview) return {...result,reply:`Updated ${result.state.lastEditedField}. Check this new preview, then reply APPROVE to post the corrected board now, EDIT for more changes, TABLE to see the roles as a table, or CANCEL.`};
  if(state.status==='awaiting_approval' && command==='approve' && result.state.status==='awaiting_time') {
   const corrected={...result.state,status:'approved',approvedBoardHash:hash,approvedAt:new Date(now).toISOString(),postAt:new Date(now).toISOString(),
    flowVerified:false,finalReplyServerAckVerified:false,editSession:null,postingMode:'correction',

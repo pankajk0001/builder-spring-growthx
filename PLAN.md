@@ -145,4 +145,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - The private edit runner now saves preview delivery by image checksum, reuses acknowledged receipts for the same image, and checks uncertain receipts without automatically resending.
 - All 108 tests pass. Live restart check queued two identical current previews and verified both were cleared using the existing acknowledged receipt, with zero new WhatsApp messages. Fresh corrected-board approval still awaits the phone.
 
+## Private table view
+
+- User requested a table option for checking and editing the board before viewing an image preview. TABLE shows the current renumbered board privately; EDIT opens corrections and returns one image preview. APPROVE remains required before group posting.
+- Table requests preserve approval, pending invalid lines, removed slots, and the group receipt; duplicate command events are ignored. No image is sent for a table request.
+- All 110 tests pass. Sent the current fictional table and TABLE / EDIT instructions privately; WhatsApp acknowledgement verified. Phone correction and final approval checks remain pending.
+
 ## Parked list

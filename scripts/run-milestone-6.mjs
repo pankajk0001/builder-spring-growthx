@@ -97,7 +97,7 @@ try{
  state.ownIds||=[];state.outbox||=[];state.editListenerStartedAt||=Date.now();await save();
  await flush();await deliverCorrection();
  if(!state.postEditGuideSent){
-  state.outbox.push({text:'Your board is posted in Test_group. Reply EDIT here if changes are required. Send several corrections together; I will show one new preview and post it only after you reply APPROVE. Reply CANCEL to keep the current posted board.'});await save();await flush();state.postEditGuideSent=true;await save();
+  state.outbox.push({text:'Your board is posted in Test_group. Reply TABLE to view the roles as a table, or EDIT if changes are required. Send several corrections together; I will show one new preview and post it only after you reply APPROVE. Reply CANCEL to keep the current posted board.'});await save();await flush();state.postEditGuideSent=true;await save();
  }
  accepting=true;status('Listening for private EDIT. Only Test_group can receive an approved correction.');
  timer=setTimeout(()=>{status('Edit listener paused after 15 minutes; rerun to resume.');finish();},15*60000);

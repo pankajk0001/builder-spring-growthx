@@ -39,3 +39,12 @@ test('removed speaker pair survives preview approval without becoming Open',()=>
  const approved=send(s,'APPROVE');assert.equal(approved.state.status,'approved');assert.equal(approved.state.board.find(r=>r.role==='Speaker 3').removed,true);
  const cancelled=send(s,'CANCEL');assert.equal(cancelled.state.board.find(r=>r.role==='Speaker 2').removed,undefined);
 });
+test('TABLE shows the current board and editing options without changing approval or sending a preview',()=>{
+ const s=start();const result=send(s,'TABLE');assert.match(result.reply,/Role board — table view/);assert.match(result.reply,/Timer\s+\| Mira Example/);assert.match(result.reply,/Reply EDIT/);
+ assert.equal(result.preview,undefined);assert.equal(result.state.status,s.status);assert.equal(result.state.approvedBoardHash,s.approvedBoardHash);assert.deepEqual(result.state.board,s.board);assert.deepEqual(result.state.groupPost,s.groupPost);
+ assert.equal(send(result.state,'TABLE').reply,null);
+});
+test('TABLE during editing keeps invalid corrections and uses the current speaker numbering',()=>{
+ let s=send(start(),'EDIT').state;s=send(s,'Speaker 2: Remove').state;s=send(s,'EDIT','fictional-more-edits').state;s=send(s,'Timer: Noel Example').state;
+ const pending=structuredClone(s.pendingEdits);const result=send(s,'TABLE');assert.doesNotMatch(result.reply,/Speaker 3|Evaluator 3/);assert.match(result.reply,/Speaker 2/);assert.deepEqual(result.state.pendingEdits,pending);assert.equal(result.state.status,'awaiting_edit');assert.equal(result.preview,undefined);
+});

@@ -1,5 +1,5 @@
 const { assertPrivateSendReceipt } = require('./note-delivery.cjs');
-const POSTED_MESSAGE = 'the helper — The board has been posted to Test_group.\nPlease check the board in the group and let me know if any edits are required.';
+const POSTED_MESSAGE = 'the helper — The board has been posted to Test_group.\nPlease check the board in the group and let me know if any edits are required. Reply TABLE to view the roles as a table, or EDIT to correct them.';
 async function sendPostConfirmation({ state, secretaryId, socket, acknowledgements, save }) {
  if (!/^\d+@s\.whatsapp\.net$/.test(secretaryId) || state.secretaryId !== secretaryId || state.groupPost?.status !== 'sent' || state.groupPost.deliveryReceiptVerified !== true) throw new Error('A verified group post is required before confirming it privately.');
  if (state.groupPost.secretaryConfirmation?.status === 'sent') return;
