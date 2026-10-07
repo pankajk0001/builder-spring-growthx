@@ -204,3 +204,10 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - EDIT now shows the latest roles table in the same private reply as correction instructions, before and after posting. It preserves the board and existing group delivery record and sends no image until corrections are entered.
 - All 118 tests pass. The user confirmed the table appears after EDIT in WhatsApp self-chat.
 - Fresh meeting repeat confirmed: renewed approval, authorized immediate Test_group post, private EDIT table, correction preview and immediate posting after APPROVE. Exact corrected image, group delivery and private success acknowledgement verified; no pending replies.
+
+## Milestone 13 — private Secretary setup (confirmed)
+
+- Separate spare helper account on the server, with the existing Test_group runner preserved.
+- Pilot permits only the paired personal Secretary account, using fictional names. Prefilled roles → acknowledged sample → club and meeting settings → reminder and posting times → final private approval.
+- Persist draft and delivery records outside the repository; no group connection or posting in this milestone. No AI calls or new paid services for setup.
+- User completed the private WhatsApp walkthrough and approved the final image. All 157 local tests pass; seven setup checks pass on the server. Restart preserved the complete setup exactly and sent no duplicate replies. Valid entries survive corrections; “Nothing to correct” approves the delivered preview without losing role holders. Group connection remains the next milestone.
