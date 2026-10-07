@@ -43,3 +43,11 @@ test('rejects missing group IDs and personal-chat IDs', () => {
   assert.throws(() => createTestGroupSender({ groupId: '', sessionPath }), /exact Test_group/);
   assert.throws(() => createTestGroupSender({ groupId: '123456789@s.whatsapp.net', sessionPath }), /exact Test_group/);
 });
+
+test('after moving, the laptop cannot start a second copy of the hosted helper', () => {
+  const { assertRunnerHome } = require('../src/test-group.cjs');
+  const hosted = { runnerHome: '/fictional/server' };
+  assert.doesNotThrow(() => assertRunnerHome(hosted, '/fictional/server'));
+  assert.throws(() => assertRunnerHome(hosted, '/fictional/laptop'), /runs on the server/);
+  assert.doesNotThrow(() => assertRunnerHome({}, '/fictional/laptop'));
+});

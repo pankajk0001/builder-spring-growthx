@@ -6,6 +6,11 @@ const { validateInput } = require('./role-board.cjs');
 const exec = promisify(execFile);
 
 async function getHermesRuntimeCommand(script) {
+  // A hosted service uses the installed Hermes environment directly. Its
+  // PYTHONPATH points to Hermes source; no laptop launcher or paid API fallback.
+  if (process.env.HELPER_HERMES_PYTHON) {
+    return [process.env.HELPER_HERMES_PYTHON, script];
+  }
   const launcher = join(homedir(), '.local/bin/hermes');
   const { stdout } = await exec(launcher, ['--print-runtime-command', '--module', 'runpy', script]);
   const [binary, ...args] = JSON.parse(stdout);

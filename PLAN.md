@@ -17,6 +17,7 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 ## Milestones
 
+
 - [x] 1. Read WhatsApp chatter and the current role board, then show the updated board in a table (verified with made-up data in Test_group).
 - [x] 2. When someone messages with a role name, check whether that role is open or already filled, and by whom (verified with fictional data in Test_group and confirmed on the phone).
 - [x] 3. Generate the role board as an image with the same layout and every name in the correct slot (square preview confirmed directly in WhatsApp self-chat).
@@ -28,6 +29,9 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - [x] 9. Connect live Test_group role replies to the current board and automatic changed-board posting at 20:00 India time, following the existing product schedule (phone claims and private clarification verified; authorized short-time automatic image test confirmed).
 - [x] 10. Repost only when roles differ from the last posted board, and base the cycle on any meeting day, ending at 20:00 India time the day before the meeting (Sunday dated board confirmed on the phone; all seven days and unchanged-board checks tested).
 - [x] 11. Save the usual meeting day and time during setup, then fill both on every fresh weekly board (Sunday 4:30 PM saved; auto-filled fresh preview confirmed on the phone).
+- [x] 12. Run the existing bounded Test_group helper on an Oracle Always Free server; preserve the board and schedule, restart automatically, and verify WhatsApp operation while the laptop helper is stopped. Approved by the user. Separate-number Secretary setup and multiple-club support follow after this hosting milestone. No paid API fallback, credits purchase or paid hosting upgrade is authorized.
+
+- Hosting implementation: Ubuntu Always Free server uses the existing paired Test_group account, private state and subscription-only Hermes credentials. Laptop runner stopped and blocked from opening a second connection. Exact approved Mac PNGs are preserved with input and image checksums; edits get new server previews. Private restored-table receipt acknowledged; hosted AI correctly ignored chatter and identified Timer availability. Normal restart and automatic recovery both reconnected without duplicate sends. All 15 visible roles inspected: TMOD pankaj Example and Speaker 1 JJ Example; other roles open. Approved post remains 8 October 2026 at 20:00 India time, weekly reminder Monday 19:00, usual meeting Sunday 2:30 PM. All 150 local tests pass; server full suite and targeted hosting checks pass, with the laptop-only launcher check skipped there. Fixed restart verification of a board awaiting its first post. The user confirmed TABLE on mobile data with the laptop off; milestone 12 is confirmed. The server remains limited to the fictional Test_group flow; real Secretary setup is next.
 
 - Full setup repeat confirmed: user answered reminder day/time, usual meeting day, and usual meeting time in sequence. Current saved settings are Monday 19:00 reminder and Sunday 2:30 PM meeting. Fresh 11 October, 2:30 PM private preview was acknowledged and confirmed on the phone; posted board restored and helper restarted without a group repost.
 
@@ -170,6 +174,8 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - All 113 tests pass. WhatsApp acknowledged the private restored-board table and TABLE / EDIT options. Repeated the restart check and the user confirmed the restored roles and names on the phone; milestone 7 is complete.
 
 ## Parked list
+
+- Real Secretary launch: one separate helper WhatsApp number, shared across clubs with private board/schedule separation; begin with one real Secretary and club. The user has a spare number, does not have a business account, and requires no additional spending. Oracle Free Tier signup and card verification are accepted. First finish hosted Test_group verification, then define and build Secretary onboarding before authorizing any real-group messages.
 
 - Usual meeting schedule implementation: after reminder day/time and meeting day, ask for the usual meeting time (24-hour or AM/PM, India time). Persist it privately; START sets each fresh board's date from the usual weekday and its time from the usual time. One-off EDIT changes do not replace those defaults. All 143 tests pass. The user saved Sunday 4:30 PM and confirmed the fresh weekly preview auto-filled 11 October at 4:30 PM. Exact preview acknowledged in WhatsApp; no test group post. Restored the previous posted board after the preview test, retaining the saved usual schedule.
 

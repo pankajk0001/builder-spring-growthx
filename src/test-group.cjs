@@ -1,5 +1,11 @@
 const TEST_GROUP_NAME = 'Test_group';
 
+function assertRunnerHome(target, currentHome) {
+  if (target.runnerHome && target.runnerHome !== currentHome) {
+    throw new Error('This helper runs on the server. Keep this laptop copy stopped.');
+  }
+}
+
 // Hermes's loopback bridge has no group-history endpoint. Do not poll its
 // account-wide message queue: this app is authorized for Test_group only.
 function createTestGroupSender({ groupId, sessionPath, bridgePort = 3000, fetchImpl = fetch }) {
@@ -39,4 +45,4 @@ function createTestGroupSender({ groupId, sessionPath, bridgePort = 3000, fetchI
   };
 }
 
-module.exports = { TEST_GROUP_NAME, createTestGroupSender };
+module.exports = { TEST_GROUP_NAME, createTestGroupSender, assertRunnerHome };

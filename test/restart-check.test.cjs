@@ -11,3 +11,9 @@ test('losing a role edit or sent receipt fails the restart check',()=>{
 test('a saved board with the wrong image checksum cannot pass',()=>{
  const state=saved();state.boardHash='a'.repeat(64);assert.throws(()=>verifyRestart(restartSnapshot(state),state),/does not match/);
 });
+
+test('an approved board waiting for its first post survives a saved restart snapshot', () => {
+ const state=saved();delete state.groupPost;
+ const before=JSON.parse(JSON.stringify(restartSnapshot(state)));
+ assert.equal(verifyRestart(before,state).boardVerified,true);
+});

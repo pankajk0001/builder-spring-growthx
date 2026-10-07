@@ -84,7 +84,7 @@ function applyApprovalMessage(state, message, currentBoardHash, now = Date.now()
       const text = pending ? [...pending.validCorrections, ...replacements,
         ...pending.invalidCorrections.slice(replacements.length).map(item => item.line)].join('\n') : message.text;
       edited = editBoard(state, text, { testOnly: state.testOnly === true });
-      boardHash = createHash('sha256').update(renderBoardImage(edited).png).digest('hex');
+      boardHash = createHash('sha256').update(renderBoardImage({ ...edited, imageSnapshot: state.imageSnapshot }).png).digest('hex');
     } catch (error) {
       if (error.invalidCorrections) return {
         state: { ...next, pendingEdits: { validCorrections: error.validCorrections, invalidCorrections: error.invalidCorrections } },

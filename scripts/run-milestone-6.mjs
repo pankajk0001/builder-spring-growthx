@@ -23,6 +23,7 @@ const {interpretFictionalMessages}=require('../src/hermes-intent.cjs');
 const weeklyMode=process.argv.includes('--weekly');
 const dir=join(homedir(),'.hermes','the-helper'),file=join(dir,'approval-state.json'),lockPath=join(dir,'group-post.lock');
 const target=JSON.parse(await readFile(join(dir,'test-group.json'),'utf8'));
+require('../src/test-group.cjs').assertRunnerHome(target,homedir());
 assert.equal(target.name,'Test_group');
 let state=JSON.parse(await readFile(file,'utf8'));
 assert.equal(state.targetGroupId,target.groupId);
@@ -48,6 +49,11 @@ let credentialWrites=Promise.resolve();sock.ev.on('creds.update',()=>{credential
 const ack=createMessageAckTracker(sock.ev,{secretaryId,secretaryLid,targetGroupId:target.groupId},30000);
 let accepting=false,queue=Promise.resolve(),finish,timer,weeklyTimer;
 const finished=new Promise(resolve=>{finish=resolve;});
+// Let the server supervisor stop the connection and finish saved work before
+// restarting. This also releases the shared send lock during a normal stop.
+for(const signal of ['SIGTERM','SIGINT'])process.once(signal,()=>{
+ accepting=false;clearTimeout(timer);clearInterval(weeklyTimer);finish();
+});
 async function flush(){
  while(state.outbox?.length){
   const item=state.outbox[0];let id=item.sentId;

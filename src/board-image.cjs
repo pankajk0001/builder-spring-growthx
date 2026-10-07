@@ -2,6 +2,7 @@ const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const { join } = require('node:path');
 const { validateInput } = require('./role-board.cjs');
 const { renumberSpeakerPairs } = require('./speaker-numbering.cjs');
+const { restoreImageSnapshot } = require('./board-image-snapshot.cjs');
 
 if (!GlobalFonts.registerFromPath(join(__dirname, '../assets/fonts/InterVariable.ttf'), 'Board Inter')) {
   throw new Error('The board font could not be loaded.');
@@ -43,7 +44,7 @@ function wrap(ctx, text, width) {
   return lines;
 }
 
-function renderBoardImage({ board, meeting }) {
+function renderBoardImage({ board, meeting, imageSnapshot }) {
   board = renumberSpeakerPairs(board);
   validateInput(board, []);
   for (const field of ['club', 'number', 'date', 'time', 'badge']) {
@@ -53,6 +54,10 @@ function renderBoardImage({ board, meeting }) {
   if (board.some(row => !known.has(row.role))) throw new Error('A board role has no matching layout slot.');
   const holders = new Map(board.map(row => [row.role, row.member === null ? 'Open' : clean(row.member)]));
   if ([...known].some(role => !holders.has(role))) throw new Error('Every layout slot needs a board role, including open roles.');
+  // Preserve an already reviewed image across different server/font runtimes.
+  // A role or meeting edit changes its input hash and requires a fresh render.
+  const preserved = restoreImageSnapshot({ board, meeting }, imageSnapshot);
+  if (preserved) return preserved;
   const measure = createCanvas(1, 1).getContext('2d');
   useFont(measure, 17);
   const nameWidth = WIDTH - SPLIT - 28;
