@@ -37,4 +37,10 @@ async function sendTestGroupBoard(sock, target, png, caption) {
   if (metadata.subject !== 'Test_group') throw new Error('The destination is no longer Test_group.');
   return sendBoardImage(sock, target.groupId, png, caption, true);
 }
-module.exports = { sendPrivateBoardPreview, sendTestGroupBoard };
+async function sendHelperTestGroupBoard(sock,target,png,caption){
+ if(target.testOnly!==true||typeof target.name!=='string'||!target.name.trim()||!/^\d+(?:-\d+)?@g\.us$/.test(target.groupId))throw Error('Only the privately configured test group is allowed.');
+ const metadata=await sock.groupMetadata(target.groupId);
+ if(metadata.id!==target.groupId||metadata.subject!==target.name)throw Error('The destination no longer matches the configured test group.');
+ return sendBoardImage(sock,target.groupId,png,caption,true);
+}
+module.exports = { sendPrivateBoardPreview, sendTestGroupBoard, sendHelperTestGroupBoard };

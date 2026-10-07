@@ -224,3 +224,9 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Connection implementation: exact private Test_group ID and both memberships verified on WhatsApp. Private connection confirmation acknowledged; no group post yet. Old test-account service paused and disabled at boot during the spare-helper pilot to prevent a competing scheduled board; original board and schedule retained privately. All 160 tests pass. Phone command POST TEST BOARD, exact group image check and restart verification remain required.
 
 - User confirmed the spare helper posted the approved board in Test_group. Exact image and every visible role verified; restart preserved the connection, schedules and posted record without duplicate sends. Fixed group receipts being filtered out. First delivery is recorded honestly as phone-confirmed (the original server receipt was missed). All 161 local tests and four hosted group-connection checks pass. Landing page is next; live member updates for the separate account remain future work.
+
+## Missing-helper and replacement test-group check (confirmed)
+
+- Missing helper blocks connection and posting, including after an earlier successful post; private instructions explain how to add the number and reconnect. Board, approval, schedules and prior delivery remain saved.
+- User created a replacement test group. Verified the helper-absent case live, then both memberships after adding the helper. The user authorized the new group post privately and confirmed it on the phone; exact approved image, WhatsApp acknowledgement, every role and private confirmation verified.
+- Group lookup ignores capitalization while binding the exact resolved name and ID privately. Earlier group receipt is archived privately; repeat sends are blocked. Restart preserved all state without sending duplicates. All 165 local tests and eight hosted connection checks pass. Landing-page planning remains next.
