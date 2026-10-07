@@ -37,3 +37,5 @@
 2026-10-07 — Live repeat-withdrawal check passed: resent fictional absence consumed, Grammarian remained open, every other visible role unchanged, no private reply sent during processing, no retry or pending messages, and normal 20:00 India-time update retained. Explicit role-free absence now uses saved sole-holder ownership, and an already-cleared holder from the current published board is ignored safely; unknown senders still require private clarification. All 177 tests pass.
 
 2026-10-07 — Checked every landing-page example button, visible navigation link and FAQ control in live Chrome at mobile and desktop sizes. All actions worked; enlarged example buttons first from 40 to 44 pixels, then footer navigation to 16-pixel text with 44-pixel tap areas. Published and rechecked every action, layout, assets, overflow and browser errors; landing build check passes.
+
+2026-10-07 — Closing landing-page button renamed to “Join the pilot” as requested. Published and verified label and existing how-it-works destination on live mobile and desktop Chrome. Pilot joining flow is not connected yet.
