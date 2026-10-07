@@ -70,3 +70,12 @@ test('two due changed boards deliver to their own groups and never duplicate aft
  for(const club of [f.A,f.B])assert.equal(club.state.memberLive.dirty,false);
  f.A.state=JSON.parse(JSON.stringify(f.A.state));f.B.state=JSON.parse(JSON.stringify(f.B.state));await eA.tick();await eB.tick();assert.equal(f.sent.filter(s=>s.png).length,2);
 });
+test('each club waits for its own saved posting time and sends only its changed board once',async()=>{
+ const f=fixture();f.A.state.postingTime='8:00 PM';f.B.state.postingTime='8:10 PM';let clock=now;
+ const eA=f.create(f.A,{now:()=>clock}),eB=f.create(f.B,{now:()=>clock});
+ for(const e of [eA,eB]){await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));}
+ await eA.group(groupMessage(tA,a,'claim','Noah Example: take Grammarian'));await eB.group(groupMessage(tB,b,'claim','Zara Example: take Grammarian'));await eA.tick();await eB.tick();
+ assert.equal(f.A.state.memberLive.nextAt,'2026-10-07T14:30:00.000Z');assert.equal(f.B.state.memberLive.nextAt,'2026-10-07T14:40:00.000Z');
+ f.sent.length=0;clock=Date.parse('2026-10-07T14:30:00Z');await eA.tick();await eB.tick();assert.deepEqual(f.sent.filter(s=>s.png).map(s=>s.jid),[tA.groupId]);
+ clock=Date.parse('2026-10-07T14:40:00Z');await eA.tick();await eB.tick();assert.deepEqual(f.sent.filter(s=>s.png).map(s=>s.jid),[tA.groupId,tB.groupId]);await eA.tick();await eB.tick();assert.equal(f.sent.filter(s=>s.png).length,2);
+});

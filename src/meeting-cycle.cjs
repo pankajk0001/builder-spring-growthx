@@ -22,7 +22,11 @@ function meetingDateStart(text){
  if(month<0||year<1000||d.getUTCFullYear()!==year||d.getUTCMonth()!==month||d.getUTCDate()!==day)throw Error('That meeting date does not exist.');
  return value-OFFSET;
 }
-function meetingCutoff(date){return meetingDateStart(date)-DAY+20*3600000;}
+function timeMinutes(text='8:00 PM'){
+ const match=/^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(parseMeetingTime(text));
+ return (Number(match[1])%12+(match[3]==='PM'?12:0))*60+Number(match[2]);
+}
+function meetingCutoff(date,postingTime){return meetingDateStart(date)-DAY+timeMinutes(postingTime)*60000;}
 function nextMeetingDate(day,after){
  if(!Number.isInteger(day)||day<0||day>6||!Number.isFinite(after))throw Error('A valid meeting day and reminder time are required.');
  const local=new Date(after+OFFSET);
@@ -30,4 +34,4 @@ function nextMeetingDate(day,after){
  const date=new Date(Date.UTC(local.getUTCFullYear(),local.getUTCMonth(),local.getUTCDate()+ahead));
  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
-module.exports={DAYS,parseMeetingDay,parseMeetingTime,meetingCutoff,nextMeetingDate};
+module.exports={DAYS,parseMeetingDay,parseMeetingTime,timeMinutes,meetingCutoff,nextMeetingDate};

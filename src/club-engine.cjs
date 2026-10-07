@@ -1,7 +1,7 @@
 const {createHash}=require('node:crypto');
 const {applySetup}=require('./secretary-setup.cjs');
 const {handleHelperEdit,deliverHelperCorrection}=require('./helper-edit.cjs');
-const {activateMembers,readMember,queueMember,applyMembers,deliverMemberUpdate,scheduleMemberTest}=require('./helper-members.cjs');
+const {activateMembers,readMember,queueMember,applyMembers,deliverMemberUpdate,scheduleMemberTest,syncMemberSchedule}=require('./helper-members.cjs');
 const {approvedImage,checkGroup,connectGroup,postGroup}=require('./helper-group-connection.cjs');
 const {bindTarget}=require('./multi-club.cjs');
 const {renderBoardImage}=require('./board-image.cjs');
@@ -34,6 +34,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
  async function ensureMembers(){
   const s=club.state;if(!enableMembers||!club.target||s?.stage!=='complete'||!s.groupLink?.connected||s.helperGroupPost?.status!=='sent')return;
   if(!s.memberLive){club.state=activateMembers(s,club.target,identity,now());await save();}
+  if(syncMemberSchedule(club.state,now()))await save();
   if(!club.state.memberGuideSent){club.state.memberGuideSent=true;club.state.outbox.push({kind:'text',text:`Member reply test is ready in ${club.target.name}. Use made-up names, for example Noah Example: I will take Grammarian. Reply TABLE privately to see current roles. Unclear requests stay private.`});await save();await flush();}
  }
  async function selectGroup(name){

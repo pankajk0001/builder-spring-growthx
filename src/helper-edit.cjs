@@ -57,7 +57,7 @@ async function deliverHelperCorrection({state,target,identity,helper,socket,ackn
  state.board=structuredClone(draft.board);state.meeting=structuredClone(draft.meeting);state.imageSnapshot=draft.imageSnapshot;
  state.boardHash=hash;state.approvedHash=hash;state.previewReceipt=draft.previewReceipt;state.lastPreviewServerAckVerified=true;state.groupLink.approvedHash=hash;
  state.helperGroupPost={...receipt,status:'sent',serverAckVerified:true,postedAt:new Date().toISOString()};
- if(state.memberLive){Object.assign(state.memberLive,{basePostId:receipt.id,board:structuredClone(draft.board),publishedBoard:structuredClone(draft.board),publishedHash:hash,dirty:false,nextAt:null,windowEnd:meetingCutoff(draft.meeting.date),authorization:{requestId:hash,initialApprovedHash:hash,groupId:target.groupId},pendingBatch:null});}
+ if(state.memberLive){Object.assign(state.memberLive,{basePostId:receipt.id,board:structuredClone(draft.board),publishedBoard:structuredClone(draft.board),publishedHash:hash,dirty:false,nextAt:null,windowEnd:meetingCutoff(draft.meeting.date,state.postingTime),authorization:{requestId:hash,initialApprovedHash:hash,groupId:target.groupId},pendingBatch:null});}
  state.memberEdit=null;state.outbox.push({kind:'text',text:`Corrected board posted to ${target.name}. Check every role. Reply TABLE or EDIT privately if needed.`});await save();return true;
 }
 module.exports={handleHelperEdit,deliverHelperCorrection};

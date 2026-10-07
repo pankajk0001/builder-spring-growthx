@@ -1,11 +1,12 @@
-const {ensureLive,groupRoleMessage,enqueueGroupMessage,applyLiveBatch,dailyDecision}=require('./live-roles.cjs');
+const {ensureLive,groupRoleMessage,enqueueGroupMessage,applyLiveBatch,dailyDecision,updateTime}=require('./live-roles.cjs');
 const {approvedImage,verifyMembership}=require('./helper-group-connection.cjs');
 const {renderBoardImage}=require('./board-image.cjs');
 const {captureImageSnapshot}=require('./board-image-snapshot.cjs');
 const {createHash}=require('node:crypto');
+const {parseMeetingTime,timeMinutes,meetingCutoff}=require('./meeting-cycle.cjs');
 const {sendHelperTestGroupBoard}=require('./preview-delivery.cjs');
 function memberProjection(s,target,identity){
- return {board:s.board,meeting:s.meeting,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
+ return {board:s.board,meeting:s.meeting,postingTime:s.postingTime,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
   targetGroupId:target.groupId,...identity,groupPost:{...s.helperGroupPost,deliveryReceiptVerified:s.helperGroupPost?.status==='sent'&&Boolean(s.helperGroupPost.serverAckVerified||s.helperGroupPost.phoneDeliveryVerified),postedAt:new Date(s.memberListeningStartedAt||0).toISOString()},
   live:s.memberLive,ownIds:[s.helperGroupPost?.id,...Object.values(s.memberLive?.posts||{}).map(p=>p.id)].filter(Boolean),outbox:[]};
 }
@@ -41,10 +42,26 @@ async function deliverMemberUpdate({state,target,identity,helper,socket,acknowle
  state.outbox.push({kind:'text',text:`Updated board posted to ${target.name}. Check every role in the image. Reply TABLE here to view the current roles.`});
  await save();return true;
 }
+function syncMemberSchedule(state,now=Date.now()){
+ const live=state.memberLive;if(!live)return false;
+ const postingTime=parseMeetingTime(state.postingTime||'8:00 PM'),cutoff=meetingCutoff(state.meeting.date,postingTime);
+ if(live.updatePostingTime===postingTime&&live.windowEnd===cutoff)return false;
+ const oldDue=live.nextAt;
+ live.updatePostingTime=postingTime;live.windowEnd=cutoff;
+ const shortTest=state.memberTest?.authorized&&!state.memberTest.done&&state.memberTest.dueAt===oldDue;
+ // An existing send intent must remain pinned to its recorded time for safe recovery.
+ if(live.dirty&&oldDue&&!live.posts[oldDue]&&!shortTest){
+  const local=new Date(Date.parse(oldDue)+330*60000);
+  let due=Date.UTC(local.getUTCFullYear(),local.getUTCMonth(),local.getUTCDate(),0,timeMinutes(postingTime))-330*60000;
+  if(due<now){const next=updateTime(now,cutoff,postingTime);due=next?Date.parse(next):Infinity;}
+  live.nextAt=due<=cutoff?new Date(due).toISOString():null;
+ }
+ return true;
+}
 function scheduleMemberTest(state,now=Date.now()){
  if(!state.memberTest?.authorized||state.memberTest.done||!state.memberLive?.dirty)return state;
  if(!state.memberTest.dueAt){const due=now+120000;if(due>state.memberLive.windowEnd)return state;state.memberTest.dueAt=new Date(due).toISOString();}
  state.memberLive.nextAt=state.memberTest.dueAt;return state;
 }
 function memberDecision(s,target,identity,now=Date.now()){if(s.groupLink?.connected!==true)return 'paused';return dailyDecision(memberProjection(s,target,identity),now);}
-module.exports={activateMembers,readMember,queueMember,applyMembers,memberDecision,memberProjection,deliverMemberUpdate,scheduleMemberTest};
+module.exports={activateMembers,readMember,queueMember,applyMembers,memberDecision,memberProjection,deliverMemberUpdate,scheduleMemberTest,syncMemberSchedule};

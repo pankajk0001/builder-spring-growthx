@@ -60,3 +60,16 @@ test('explicit absence clears a sole holder despite AI clarification; repeats st
  s.memberLive.board.find(r=>r.role==='Grammarian').member='Zara Example';apply('again','Noah Example');assert.equal(s.memberLive.board.find(r=>r.role==='Grammarian').member,'Zara Example');assert.equal(s.outbox.length,0);
  apply('unknown','Unknown Example');assert.equal(s.outbox.length,1);assert.match(s.outbox[0].text,/please clarify/);
 });
+test('club changed-board updates use its saved posting time, including the final day cutoff',()=>{
+ let s=ready();s.postingTime='8:10 PM';
+ const m=readMember(event('custom-time','Noah Example: take Grammarian'),s,target,identity);s=queueMember(s,m,target,identity);s=applyMembers(s,[m],[{messageId:m.id,intent:'take',role:'Grammarian'}],target,identity);
+ assert.equal(s.memberLive.nextAt,'2026-10-07T14:40:00.000Z');assert.equal(s.memberLive.windowEnd,Date.parse('2026-10-09T14:40:00Z'));
+ assert.equal(memberDecision(s,target,identity,Date.parse('2026-10-07T14:30:00Z')),'wait');assert.equal(memberDecision(s,target,identity,Date.parse('2026-10-07T14:40:00Z')),'send');
+});
+test('saved pending updates rebase to the club time without touching board, receipts or an uncertain send',()=>{
+ const {syncMemberSchedule}=require('../src/helper-members.cjs');
+ let s=ready(),m=readMember(event('pending','Noah Example: take Grammarian'),s,target,identity);s=queueMember(s,m,target,identity);s=applyMembers(s,[m],[{messageId:m.id,intent:'take',role:'Grammarian'}],target,identity);
+ const board=structuredClone(s.memberLive.board);s.postingTime='8:10 PM';assert.equal(syncMemberSchedule(s,now),true);assert.equal(s.memberLive.nextAt,'2026-10-07T14:40:00.000Z');assert.deepEqual(s.memberLive.board,board);assert.equal(s.helperGroupPost.id,'posted');assert.equal(syncMemberSchedule(s,now),false);
+ const frozen=structuredClone(s);frozen.memberLive.posts[frozen.memberLive.nextAt]={status:'sending'};frozen.postingTime='8:20 PM';syncMemberSchedule(frozen,now);assert.equal(frozen.memberLive.nextAt,'2026-10-07T14:40:00.000Z');
+ const short=structuredClone(s);short.memberTest={authorized:true,done:false,dueAt:'2026-10-07T12:02:00.000Z'};short.memberLive.nextAt=short.memberTest.dueAt;short.postingTime='8:20 PM';syncMemberSchedule(short,now);assert.equal(short.memberLive.nextAt,short.memberTest.dueAt);
+});
