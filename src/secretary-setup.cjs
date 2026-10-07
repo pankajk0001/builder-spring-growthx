@@ -33,7 +33,7 @@ function applySetup(state,command,now=Date.now()){
  const text=command.text;
  try{
  if(/^TABLE$/i.test(text)){s.outbox.push({kind:'text',text:renderTable(s.memberLive?.board||s.board)});return s;}
- if(s.stage==='complete'){s.outbox.push({kind:'text',text:'Your private setup is saved. Group connection is the next step; no group posts are enabled.'});return s;}
+ if(s.stage==='complete'){s.outbox.push({kind:'text',text:s.groupLink?.connected?`Your group is connected. Reply TABLE to view roles or EDIT to make corrections.`:'Your private setup is saved. Group connection is the next step; no group posts are enabled.'});return s;}
  if(['sample','final'].includes(s.stage)){
   if(isApproval(text)){
    const pending=s.pendingEdits;
@@ -68,4 +68,4 @@ function applySetup(state,command,now=Date.now()){
 }
  return s;
 }
-module.exports={incoming,begin,applySetup,ROLES};
+module.exports={incoming,begin,applySetup,applyRoleEdits,ROLES};

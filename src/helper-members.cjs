@@ -5,7 +5,7 @@ const {captureImageSnapshot}=require('./board-image-snapshot.cjs');
 const {createHash}=require('node:crypto');
 const {sendHelperTestGroupBoard}=require('./preview-delivery.cjs');
 function memberProjection(s,target,identity){
- return {board:s.board,meeting:s.meeting,testOnly:s.testOnly,status:s.stage==='complete'?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
+ return {board:s.board,meeting:s.meeting,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
   targetGroupId:target.groupId,...identity,groupPost:{...s.helperGroupPost,deliveryReceiptVerified:s.helperGroupPost?.status==='sent'&&Boolean(s.helperGroupPost.serverAckVerified||s.helperGroupPost.phoneDeliveryVerified),postedAt:new Date(s.memberListeningStartedAt||0).toISOString()},
   live:s.memberLive,ownIds:[s.helperGroupPost?.id,...Object.values(s.memberLive?.posts||{}).map(p=>p.id)].filter(Boolean),outbox:[]};
 }
@@ -36,7 +36,7 @@ async function deliverMemberUpdate({state,target,identity,helper,socket,acknowle
  if(sent.sha256!==hash||!sent.id)throw Error('WhatsApp did not confirm the updated board image.');
  attempt.id=sent.id;await save();await acknowledgements.wait(sent.id);
  Object.assign(attempt,{status:'sent',serverAckVerified:true,postedAt:new Date(now).toISOString()});
- live.publishedBoard=structuredClone(draft.board);live.dirty=false;live.nextAt=null;
+ live.publishedBoard=structuredClone(draft.board);live.publishedHash=hash;live.dirty=false;live.nextAt=null;
  if(state.memberTest?.dueAt===due)state.memberTest.done=true;
  state.outbox.push({kind:'text',text:`Updated board posted to ${target.name}. Check every role in the image. Reply TABLE here to view the current roles.`});
  await save();return true;

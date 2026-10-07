@@ -246,3 +246,9 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - User authorized one two-minute changed-board phone test, then return to normal scheduling. All members and messages in this pilot remain fictional; no real-club launch or broader access.
 
 - Phone test confirmed: a fresh fictional group claim assigned Grammarian through the hosted Hermes interpreter. No early post; one updated image was delivered after the authorized two-minute time, with exact image hash and WhatsApp server acknowledgement. All four filled roles and 11 open roles verified; private success acknowledged. Short-test permission consumed; normal changed-board timing restored to 20:00 India time. Restart retained roles, inbox decisions and delivery records without another image. All 170 tests and four hosted member-flow checks pass. Holder protection, withdrawals, one-role limits, clarification privacy, freshness, uncertainty and normal scheduling have automated coverage; those additional live phone scenarios remain optional follow-up checks.
+
+## Spare-helper correction options (phone-confirmed; correction post still pending)
+
+- EDIT now opens the latest roles table, including pending member updates, instead of the stale onboarding response. Corrections generate a fresh approval-bound image. Reopening EDIT preserves the draft.
+- TABLE shows the draft text table and matching image preview. APPROVE, EDIT, TABLE and CANCEL are offered; the user confirmed both private deliveries. All 175 local tests and five hosted correction checks pass.
+- Member interpretation and automatic posting pause during corrections. An approved correction is protected against duplicate/uncertain sends and preserves queued member messages. Live approval and corrected-group delivery remain to be checked before claiming that branch is confirmed.

@@ -8,6 +8,7 @@ const require=createRequire(import.meta.url);
 const selectGroupRequested=process.argv.includes('--select-test-group');
 const checkGroupRequested=process.argv.includes('--check-group')||selectGroupRequested;
 const {incoming,applySetup}=require('../src/secretary-setup.cjs');
+const {handleHelperEdit,deliverHelperCorrection}=require('../src/helper-edit.cjs');
 const {activateMembers,readMember,queueMember,applyMembers,deliverMemberUpdate,scheduleMemberTest}=require('../src/helper-members.cjs');
 const {interpretFictionalMessages}=require('../src/hermes-intent.cjs');
 const {acceptHelperChat,checkGroup,approvedImage,connectGroup,postGroup}=require('../src/helper-group-connection.cjs');
@@ -43,9 +44,11 @@ async function flush(){
   if(item.sending&&!item.sentId)throw Error('A private send is uncertain; inspect the phone before recovery.');
   if(!item.sentId){
    item.sending=true;await save();
-   if(item.kind==='preview'){
-    const rendered=renderBoardImage(state);state.imageSnapshot=captureImageSnapshot(state,rendered);state.boardHash=createHash('sha256').update(rendered.png).digest('hex');await save();
-    const receipt=await sendPrivateBoardPreview(sock,config.secretaryId,rendered.png,item.caption);state.previewReceipt=receipt;item.sentId=receipt.id;
+   if(['preview','edit-preview'].includes(item.kind)){
+    const draft=item.kind==='edit-preview'?state.memberEdit:state;
+    if(!draft)throw Error('The correction draft is missing.');
+    const rendered=renderBoardImage(draft);draft.imageSnapshot=captureImageSnapshot(draft,rendered);draft.boardHash=createHash('sha256').update(rendered.png).digest('hex');await save();
+    const receipt=await sendPrivateBoardPreview(sock,config.secretaryId,rendered.png,item.caption);draft.previewReceipt=receipt;item.sentId=receipt.id;
    }else{
     const receipt=await sock.sendMessage(config.secretaryId,{text:item.text});assertPrivateSendReceipt(receipt,config.secretaryId);item.sentId=receipt.key.id;
    }
@@ -53,6 +56,7 @@ async function flush(){
   }
   await ack.wait(item.sentId);
   if(item.kind==='preview')state.lastPreviewServerAckVerified=true;
+  if(item.kind==='edit-preview')state.memberEdit.previewAcknowledged=true;
   state.outbox.shift();await save();status('Private setup reply acknowledged.');
  }
 }
@@ -65,7 +69,7 @@ async function ensureMembers(){
 }
 async function processMembers(){
  const live=state?.memberLive;
- if(!state?.groupLink?.connected||!live?.inbox.length||live.retryAt>Date.now())return;
+ if(state?.memberEdit||!state?.groupLink?.connected||!live?.inbox.length||live.retryAt>Date.now())return;
  try{
   if(!live.pendingBatch){const messages=live.inbox.slice(0,10);const result=await interpretFictionalMessages(live.board,messages,'availability');live.pendingBatch={messages,decisions:result.decisions};await save();}
   state=applyMembers(state,live.pendingBatch.messages,live.pendingBatch.decisions,target,config);
@@ -77,8 +81,13 @@ async function processMembers(){
   await save();await flush();status('Member interpretation paused; messages preserved for retry.');
  }
 }
+async function deliverCorrection(){
+ if(state?.memberEdit?.stage!=='post_ready')return;
+ try{await deliverHelperCorrection({state,target,identity:config,helper:helperIdentity,socket:sock,acknowledgements:ack,save});await flush();}
+ catch(error){if(!state.memberEdit.deliveryErrorNotified){state.memberEdit.deliveryErrorNotified=true;state.outbox.push({kind:'text',text:error.message});await save();await flush();}}
+}
 async function memberTick(){
- await ensureMembers();await processMembers();
+ await deliverCorrection();await ensureMembers();await processMembers();
  if(state?.memberLive&&state.groupLink?.connected){
   try{if(await deliverMemberUpdate({state,target,identity:config,helper:helperIdentity,socket:sock,acknowledgements:ack,save})){await flush();status('Changed group board delivered; private confirmation acknowledged.');}}
   catch(error){if(!state.memberDeliveryFailureNotified){state.memberDeliveryFailureNotified=true;state.outbox.push({kind:'text',text:error.message});await save();await flush();}}
@@ -126,7 +135,9 @@ sock.ev.on('messages.upsert',event=>{
    enqueue(async()=>{await ensureMembers();const member=readMember({type:event.type,message:{...message,message:b.extractMessageContent(message.message)}},state,target,config);if(member){state=queueMember(state,member,target,config);await save();}});continue;
   }
   const command=event.type==='notify'?incoming(message,config,start):null;if(command)enqueue(async()=>{
-  if(/^(CONNECT TEST GROUP|POST TEST BOARD)$/i.test(command.text)&&state){
+  const edit=handleHelperEdit(state,command,target);
+  if(edit.handled){state=edit.state;}
+  else if(/^(CONNECT TEST GROUP|POST TEST BOARD)$/i.test(command.text)&&state){
    if(!state.seen.includes(command.id)){
     state.seen.push(command.id);await save();
     const options={state,target,identity:config,helper:helperIdentity,socket:sock,acknowledgements:ack,save};
@@ -136,7 +147,7 @@ sock.ev.on('messages.upsert',event=>{
     }catch(error){state.outbox.push({kind:'text',text:error.message});}
    }
   }else{state=applySetup(state,command);}
-  await save();await flush();await ensureMembers();status(`Private setup stage: ${state?.stage||'waiting'}.`);
+  await save();await flush();await deliverCorrection();await ensureMembers();status(`Private setup stage: ${state?.stage||'waiting'}.`);
  });}
 
 });
