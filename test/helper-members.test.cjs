@@ -50,3 +50,13 @@ test('formatted and plain withdrawals recognize the trusted test secretary, incl
   assert.notEqual(outsider.sender,'Noah Example');
  }
 });
+
+test('explicit absence clears a sole holder despite AI clarification; repeats stay quiet and strangers need help',()=>{
+ let s=ready();s.memberLive.board.find(r=>r.role==='Grammarian').member='Noah Example';
+ s.memberLive.publishedBoard=structuredClone(s.memberLive.board);
+ const apply=(id,sender)=>{const m=readMember(event(id,sender+': I can’t make it'),s,target,identity);s=queueMember(s,m,target,identity);s=applyMembers(s,[m],[{messageId:m.id,intent:'clarify'}],target,identity);};
+ apply('first','Noah Example');assert.equal(s.memberLive.board.find(r=>r.role==='Grammarian').member,null);assert.equal(s.outbox.length,0);
+ const due=s.memberLive.nextAt;apply('repeat','Noah Example');assert.equal(s.outbox.length,0);assert.equal(s.memberLive.nextAt,due);
+ s.memberLive.board.find(r=>r.role==='Grammarian').member='Zara Example';apply('again','Noah Example');assert.equal(s.memberLive.board.find(r=>r.role==='Grammarian').member,'Zara Example');assert.equal(s.outbox.length,0);
+ apply('unknown','Unknown Example');assert.equal(s.outbox.length,1);assert.match(s.outbox[0].text,/please clarify/);
+});

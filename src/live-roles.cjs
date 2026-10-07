@@ -67,9 +67,17 @@ function applyLiveBatch(state,messages,decisions){
  if(!Array.isArray(decisions)||decisions.length!==messages.length)throw Error('Every message requires one role decision.');
  let board=structuredClone(live.board);const notes=[];let changedAt=null;
  for(let i=0;i<messages.length;i++){
-  const source=messages[i],decision=decisions[i];
+  const source=messages[i];let decision=decisions[i];
   if(decision?.messageId!==source.id||!['check','take','drop','ignore','clarify'].includes(decision.intent))throw Error('Invalid or reordered member decisions.');
   const existing=board.find(row=>row.member&&memberKey(row.member)===memberKey(source.sender));
+  // Resolve this explicit, role-free withdrawal from saved ownership, not an AI guess.
+  const explicitAbsence=/^i (?:can['’]t|cannot|can not) make it[.!]?$/i.test(source.text.trim());
+  if(explicitAbsence){
+   const held=board.filter(row=>!row.removed&&row.member&&memberKey(row.member)===memberKey(source.sender));
+   if(held.length===1)decision={messageId:source.id,intent:'drop',role:held[0].role};
+   else if(held.length===0&&live.publishedBoard.some(row=>!row.removed&&row.member&&memberKey(row.member)===memberKey(source.sender)))decision={messageId:source.id,intent:'ignore'};
+   else decision={messageId:source.id,intent:'clarify'};
+  }
   const message={...source,sender:existing?.member||source.sender};
   const role=board.find(row=>row.role===decision.role&&!row.removed);
   if(decision.intent==='take'&&role?.member===null&&existing&&existing.role!==role.role){
