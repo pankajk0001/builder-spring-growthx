@@ -272,3 +272,15 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 - User confirmed that changed-board updates should follow each club's saved posting time. The original club stays at 20:00 India time; the second uses 20:10. Final update cutoff follows that same time on the day before each club's meeting.
 - Corrected the scheduling calculation, private setup summary, correction cutoff and safe rebasing of pending updates. Preserve short-test authorization, board ownership, posted receipts and uncertain send intents. All 191 local tests and 16 hosted member/club checks pass. Live restart verified pending times 20:00 and 20:10, both boards and all group receipts unchanged, no paused clubs or new sends. Actual scheduled delivery remains pending its due time.
+
+## Milestone 18 — landing page to test-pilot WhatsApp (phone-confirmed)
+
+- Join the pilot opens the existing shared helper number with START ready for the visitor to send. No new WhatsApp number is required.
+- Keep the helper number out of committed source and tests; insert the intentionally public contact link into ignored build output from private configuration.
+- Explain that joining currently starts a test pilot with fictional names; real-club onboarding remains parked.
+- Reuse an existing Secretary account for the live link check. START must preserve its saved club and lead to TABLE or EDIT; creation of new records is already verified in milestone 17.
+- Verify live mobile/desktop link destinations and the resulting phone reply, then save and publish the checkpoint.
+
+- Test-pilot link published and checked in live mobile/desktop Chrome: Join the pilot opens the privately configured paired helper with START ready, existing navigation and FAQ work, no layout or browser errors. Existing-account START preserves its club in regression checks. Contact number is inserted only into ignored build output; no real number is committed. Awaiting phone tap/send and helper reply confirmation; real-club restrictions remain active.
+
+- User confirmed landing-page → WhatsApp → START → helper reply on the phone. Private reply acknowledged; both existing club records and approved group posts preserved, no new club created, schedules remain 20:00 and 20:10 India time. All 192 tests pass. Test-pilot connection is confirmed; real-club onboarding remains the next parked scope.

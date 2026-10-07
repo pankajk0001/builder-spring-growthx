@@ -79,3 +79,9 @@ test('each club waits for its own saved posting time and sends only its changed 
  f.sent.length=0;clock=Date.parse('2026-10-07T14:30:00Z');await eA.tick();await eB.tick();assert.deepEqual(f.sent.filter(s=>s.png).map(s=>s.jid),[tA.groupId]);
  clock=Date.parse('2026-10-07T14:40:00Z');await eA.tick();await eB.tick();assert.deepEqual(f.sent.filter(s=>s.png).map(s=>s.jid),[tA.groupId,tB.groupId]);await eA.tick();await eB.tick();assert.equal(f.sent.filter(s=>s.png).length,2);
 });
+test('START from the pilot link resumes an existing Secretary without resetting or duplicating their club',async()=>{
+ const f=fixture(),e=f.create(f.A);await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));
+ const before=structuredClone(f.A.state),count=f.registry.clubs.length;f.sent.length=0;await e.command(command('join-again','START'));
+ assert.equal(f.registry.clubs.length,count);assert.deepEqual(f.A.state.board,before.board);assert.deepEqual(f.A.state.meeting,before.meeting);assert.deepEqual(f.A.state.groupLink,before.groupLink);assert.deepEqual(f.A.state.helperGroupPost,before.helperGroupPost);assert.deepEqual(f.A.state.memberLive,before.memberLive);
+ assert.equal(f.sent.length,1);assert.equal(f.sent[0].jid,a.secretaryId);assert.match(f.sent[0].content.text,/TABLE.*EDIT/);
+});
