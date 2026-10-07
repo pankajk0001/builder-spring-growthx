@@ -1,6 +1,6 @@
 # Plan
 
-- Approved absence wording fix: “I won't be able to attend the meeting” and clear equivalent phrases now clear the sender's verified sole role, preserve other holders, keep repeats quiet and schedule the changed board at the club's saved time. Unverified identities and unclear replies stay private. All 206 local tests pass. Server activation and Test_group phone verification are pending: the available laptop SSH identity was refused by the existing server. Do not claim this fix is live until access is restored and WhatsApp verification passes.
+- Approved absence wording fix: “I won't be able to attend the meeting” and clear equivalent phrases now clear the sender's verified sole role, preserve other holders, keep repeats quiet and schedule the changed board at the club's saved time. Unverified identities and unclear replies stay private. All 206 local tests pass. Server access restored using the original key supplied privately in Downloads. Activated on the existing helper; all 25 hosted member/withdrawal checks pass and WhatsApp reconnection is verified. Every visible role in all three saved clubs and their group receipts remained unchanged after restart. Test_group phone verification remains pending; do not mark this flow phone-confirmed yet.
 
 Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 approved on 2026-10-07.
 
