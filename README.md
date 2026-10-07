@@ -125,3 +125,11 @@ Before moving state, stop the laptop helper and keep a private backup. Run `node
 Install the service file into `/etc/systemd/system/whatsapp-helper.service`, run `sudo systemctl daemon-reload`, then `sudo systemctl enable --now whatsapp-helper`. Inspect it with `sudo systemctl status whatsapp-helper` and `sudo journalctl -u whatsapp-helper --since '5 minutes ago' --no-pager`. Restart with `sudo systemctl restart whatsapp-helper`. Keep the laptop copy stopped while the server owns the session; moving back requires stopping the server and copying the latest private state, ledger and credentials back first.
 
 Acceptance: verify the complete restored board, the exact approved image, schedule and send receipts; prove an AI call with fictional inputs; check private TABLE from the phone; restart the server service without reposting the board; finally send TABLE on mobile data while the laptop is off. Always Free compute has availability limits and may be reclaimed if idle. The one-number setup for real Secretaries and separation between clubs are still subsequent milestones; this service remains restricted to Test_group and fictional names.
+
+## Product information page
+
+Public page: https://neat-hound-892.convex.site
+
+`npm run build` builds only the public files from `web/` and the licensed Inter font into `dist/`. `npm run deploy` builds and publishes them to the existing Convex static-hosting component. No helper session, phone number, private state, or environment file is included. `npm start` remains the WhatsApp runner.
+
+The page uses fictional examples and explains current pilot availability. It has no login, signup, analytics, payment, or connection to WhatsApp messages.

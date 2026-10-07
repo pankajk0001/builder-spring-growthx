@@ -14,7 +14,8 @@
     "test:whatsapp:approval": "node scripts/run-milestone-4.mjs",
     "test:whatsapp:post": "node scripts/run-milestone-5.mjs",
     "test:whatsapp:edit": "node scripts/run-milestone-6.mjs",
-    "test:whatsapp:restart": "node scripts/run-milestone-7.mjs"
+    "test:whatsapp:restart": "node scripts/run-milestone-7.mjs",
+    "build": "node scripts/build-landing.mjs"
   },
   "keywords": [],
   "author": "",

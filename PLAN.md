@@ -230,3 +230,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Missing helper blocks connection and posting, including after an earlier successful post; private instructions explain how to add the number and reconnect. Board, approval, schedules and prior delivery remain saved.
 - User created a replacement test group. Verified the helper-absent case live, then both memberships after adding the helper. The user authorized the new group post privately and confirmed it on the phone; exact approved image, WhatsApp acknowledgement, every role and private confirmation verified.
 - Group lookup ignores capitalization while binding the exact resolved name and ID privately. Earlier group receipt is archived privately; repeat sends are blocked. Restart preserved all state without sending duplicates. All 165 local tests and eight hosted connection checks pass. Landing-page planning remains next.
+
+## Milestone 15 — product information landing page (confirmed)
+
+- One public information page for Toastmasters Secretaries, matching DESIGN.md: Inter, cream/pink/blue surfaces, clear navigation and dark footer. Main action: See how it works.
+- Show a fictional interactive WhatsApp example, explain private review and group posting, and disclose pilot availability. No login, signup form, public helper phone number, payment or chat data.
+- Build only public web assets, host on the existing Convex site, and verify desktop/mobile behavior in the browser. WhatsApp services remain separate.
+
+- Landing page implemented and published to the existing production Convex site for review. Desktop and mobile Chrome checks verify the example controls, primary link, FAQ, assets, no horizontal overflow and no browser errors. Public build copies six explicitly approved assets; all 166 tests pass. User reviewed the live page and requested no changes; milestone confirmed.
