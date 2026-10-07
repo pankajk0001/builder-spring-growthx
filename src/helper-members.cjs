@@ -6,12 +6,12 @@ const {createHash}=require('node:crypto');
 const {parseMeetingTime,timeMinutes,meetingCutoff}=require('./meeting-cycle.cjs');
 const {sendHelperTestGroupBoard}=require('./preview-delivery.cjs');
 function memberProjection(s,target,identity){
- return {board:s.board,meeting:s.meeting,postingTime:s.postingTime,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
+ return {board:s.board,meeting:s.meeting,postingTime:s.postingTime,pilotMode:s.pilotMode,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
   targetGroupId:target.groupId,...identity,groupPost:{...s.helperGroupPost,deliveryReceiptVerified:s.helperGroupPost?.status==='sent'&&Boolean(s.helperGroupPost.serverAckVerified||s.helperGroupPost.phoneDeliveryVerified),postedAt:new Date(s.memberListeningStartedAt||0).toISOString()},
   live:s.memberLive,ownIds:[s.helperGroupPost?.id,...Object.values(s.memberLive?.posts||{}).map(p=>p.id)].filter(Boolean),outbox:[]};
 }
 function activateMembers(s,target,identity,now=Date.now()){
- if(target.testOnly!==true||s.groupLink?.connected!==true||s.groupLink.groupId!==target.groupId||s.helperGroupPost?.status!=='sent'||!(s.helperGroupPost.serverAckVerified||s.helperGroupPost.phoneDeliveryVerified))throw Error('Member replies need a verified posted board and connected test group.');
+ if(!(target.testOnly===true||s.pilotMode===true&&target.pilotMode===true&&target.secretaryId===identity.secretaryId)||s.groupLink?.connected!==true||s.groupLink.groupId!==target.groupId||s.helperGroupPost?.status!=='sent'||!(s.helperGroupPost.serverAckVerified||s.helperGroupPost.phoneDeliveryVerified))throw Error('Member replies need a verified posted board and connected test group.');
  if(s.memberLive){if(s.memberLive.authorization.groupId!==target.groupId||s.memberLive.authorization.initialApprovedHash!==s.approvedHash)throw Error('Member updates belong to a different approved group board.');return s;}
  approvedImage(s);
  const current={...s,memberListeningStartedAt:Math.floor(now/1000)*1000};

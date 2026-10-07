@@ -38,7 +38,7 @@ async function sendTestGroupBoard(sock, target, png, caption) {
   return sendBoardImage(sock, target.groupId, png, caption, true);
 }
 async function sendHelperTestGroupBoard(sock,target,png,caption){
- if(target.testOnly!==true||typeof target.name!=='string'||!target.name.trim()||!/^\d+(?:-\d+)?@g\.us$/.test(target.groupId))throw Error('Only the privately configured test group is allowed.');
+ if(!(target.testOnly===true||target.pilotMode===true&&/^\d+@s\.whatsapp\.net$/.test(target.secretaryId||''))||typeof target.name!=='string'||!target.name.trim()||!/^\d+(?:-\d+)?@g\.us$/.test(target.groupId))throw Error('Only the privately configured test group is allowed.');
  const metadata=await sock.groupMetadata(target.groupId);
  if(metadata.id!==target.groupId||metadata.subject!==target.name)throw Error('The destination no longer matches the configured test group.');
  return sendBoardImage(sock,target.groupId,png,caption,true);

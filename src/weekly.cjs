@@ -36,7 +36,7 @@ function startWeeklyBoard(state,now=Date.now()){
  if(state.weekly.activeWeek===state.weekly.pendingWeek)throw Error('This week’s board is already open. Reply TABLE or EDIT.');
  if(state.status!=='cancelled'&&(state.status!=='approved'||state.groupPost?.status!=='sent'||state.editSession))throw Error('Finish or cancel the current draft before starting the next week.');
  const previous=structuredClone(state);delete previous.weekly;delete previous.outbox;
- const board=state.board.map(row=>({...row,member:null}));
+ const board=state.board.map(row=>{const fresh={...row,member:null};delete fresh.memberId;delete fresh.memberIds;return fresh;});
  const meeting={...state.meeting};
  const due=Date.parse(state.weekly.pendingWeek);
  meeting.date=nextMeetingDate(state.weekly.meetingDay,due);

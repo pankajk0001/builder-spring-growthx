@@ -6,11 +6,12 @@ const {verifyMembership}=require('./helper-group-connection.cjs');
 const {sendHelperTestGroupBoard}=require('./preview-delivery.cjs');
 const {meetingCutoff}=require('./meeting-cycle.cjs');
 const {createHash}=require('node:crypto');
+const copy=require('./chat-copy.cjs');
 function queueDraftPreview(s){
  const draft=s.memberEdit,rendered=renderBoardImage(draft);
  draft.imageSnapshot=captureImageSnapshot(draft,rendered);draft.boardHash=createHash('sha256').update(rendered.png).digest('hex');
  draft.previewReceipt=null;draft.previewAcknowledged=false;draft.stage='preview';
- s.outbox.push({kind:'edit-preview',caption:'Corrected board preview. Check every role, then reply APPROVE to post, EDIT to make more changes, TABLE to view the draft as a table and preview, or CANCEL to keep the current group board.'});
+ s.outbox.push({kind:'edit-preview',caption:s.pilotMode?`Updated board. Check every role and the venue.\nAPPROVE to ${s.helperGroupPost?'post':'save'} · EDIT to change · TABLE to view roles · CANCEL to keep the current board.`:'Corrected board preview. Check every role, then reply APPROVE to post, EDIT to make more changes, TABLE to view the draft as a table and preview, or CANCEL to keep the current group board.'});
 }
 function handleHelperEdit(state,command,target){
  if(state?.stage!=='complete'||(!state.memberEdit&&!/^EDIT$/i.test(command.text)))return {state,handled:false};
@@ -18,11 +19,12 @@ function handleHelperEdit(state,command,target){
  const s=JSON.parse(JSON.stringify(state));s.seen.push(command.id);
  const note=text=>s.outbox.push({kind:'text',text});
  const text=command.text.trim();
+ if(/^HELP$/i.test(text)&&s.pilotMode){note('Send role or Venue corrections, then review the new preview.\n\nAPPROVE · EDIT · TABLE · CANCEL');return {state:s,handled:true};}
  if(/^EDIT$/i.test(text)){
   if(s.memberEdit?.send){note('A correction send is uncertain. Check the group before making another correction.');return {state:s,handled:true};}
   if(s.memberEdit){s.memberEdit.stage='editing';s.memberEdit.previewAcknowledged=false;s.memberEdit.previewReceipt=null;}
-  else s.memberEdit={stage:'editing',board:structuredClone(s.memberLive?.board||s.board),meeting:structuredClone(s.meeting),imageSnapshot:s.imageSnapshot};
-  note('Current role board\n'+renderTable(s.memberEdit.board)+'\n\nSend corrections together, for example Timer: Mira Example; Listener: Open. I will show a new preview. Reply TABLE to see the draft table and preview. Only APPROVE posts it. Reply CANCEL to keep the posted board.');
+  else s.memberEdit={stage:'editing',board:structuredClone(s.memberLive?.board||s.board),meeting:structuredClone(s.meeting),imageSnapshot:s.imageSnapshot,pilotMode:s.pilotMode,testOnly:s.testOnly};
+  note(s.pilotMode?copy.editInstructions({...s,board:s.memberEdit.board,meeting:s.memberEdit.meeting,memberLive:null}):'Current role board\n'+renderTable(s.memberEdit.board)+'\n\nSend corrections together, for example Timer: Mira Example; Listener: Open. I will show a new preview. Reply TABLE to see the draft table and preview. Only APPROVE posts it. Reply CANCEL to keep the posted board.');
  }else if(/^TABLE$/i.test(text)){
   if(s.memberEdit.send){note('A correction send is uncertain. Check the group before requesting another preview.');}
   else{note('Draft role board\n'+renderTable(s.memberEdit.board)+'\n\nCheck the matching preview below, then reply APPROVE, EDIT, or CANCEL.');queueDraftPreview(s);}
@@ -34,7 +36,11 @@ function handleHelperEdit(state,command,target){
   const draft=s.memberEdit;
   if(draft.stage!=='preview'||draft.pendingEdits||!draft.previewAcknowledged||!draft.previewReceipt?.id)note('Check the latest delivered correction preview before approving.');
   else if(command.replyTo&&command.replyTo!==draft.previewReceipt.id)note('Approve the latest correction preview.');
-  else{draft.stage='post_ready';note(`Corrected board approved. I will post this exact preview to ${target.name} and confirm privately.`);}
+  else if(!s.helperGroupPost){
+   Object.assign(s,{board:structuredClone(draft.board),meeting:structuredClone(draft.meeting),imageSnapshot:draft.imageSnapshot,boardHash:draft.boardHash,approvedHash:draft.boardHash,previewReceipt:draft.previewReceipt,lastPreviewServerAckVerified:true,memberEdit:null});
+   if(s.groupLink)s.groupLink.approvedHash=s.approvedHash;
+   note('Corrections saved. Connect your group, then send POST BOARD to confirm its first post.');
+  }else{draft.stage='post_ready';note(`Corrected board approved. I will post this exact preview to ${target?.name||'your club group'} and confirm privately.`);}
  }else if(s.memberEdit.stage==='editing'||s.memberEdit.stage==='preview'){
   try{applyRoleEdits(s.memberEdit,text);queueDraftPreview(s);}
   catch(error){if(error.invalidCorrections){s.memberEdit.pendingEdits={validCorrections:error.validCorrections,invalidCorrections:error.invalidCorrections};note('Please correct these lines:\n'+error.message+'\nYour valid corrections are saved. Resend only corrected lines, in the order shown.');}else note(error.message);}

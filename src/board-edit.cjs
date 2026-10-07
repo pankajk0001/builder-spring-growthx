@@ -10,7 +10,7 @@ function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
   if (!match) throw new Error('Use a field followed by a colon and its new value, like Timer: Zara Example or Timer: Open.');
   const suppliedField = match[1].trim().toLowerCase();
   const field = suppliedField === 'listner' ? 'listener' : suppliedField, value = match[2].trim().replace(/\s+/g, ' ');
-  if (!value || value.length > 120) throw new Error('Use a non-empty value of at most 120 characters.');
+  if (!value || value.length > (field==='venue'?240:120)) throw new Error('Use a non-empty value of at most 120 characters.');
   const updated = { board: board.map(row => ({ ...row })), meeting: { ...meeting } };
   const row = updated.board.find(row => row.role.toLowerCase() === field);
   if (row) {
@@ -23,6 +23,7 @@ function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
       return { ...updated, changedField: row.role, fieldId: `role:${row.role}` };
     }
     if (testOnly && !/^(open|tbd)$/i.test(value) && !value.endsWith(' Example')) throw new Error('Use a made-up test name ending in Example, or Open.');
+    if(row.member!==value){delete row.memberId;delete row.memberIds;}
     row.member = /^(open|tbd)$/i.test(value) ? null : value;
     if (row.removed) {
       row.removed = false;
@@ -33,9 +34,9 @@ function editSingleField({ board, meeting }, text, { testOnly = false } = {}) {
     }
     return { ...updated, changedField: row.role, fieldId: `role:${row.role}` };
   }
-  const fields = { club: 'club', 'club name': 'club', 'meeting number': 'number', 'meeting date': 'date', date: 'date', 'meeting time': 'time', time: 'time' };
+  const fields = { venue: 'venue', club: 'club', 'club name': 'club', 'meeting number': 'number', 'meeting date': 'date', date: 'date', 'meeting time': 'time', time: 'time' };
   const key = fields[field];
-  if (!key) throw new Error('That field is not on this board. Use an existing role, Club, Meeting number, Meeting date, or Meeting time.');
+  if (!key) throw new Error('That field is not on this board. Use an existing role, Club, Meeting number, Meeting date, Meeting time, or Venue.');
   if (testOnly && key === 'club' && !/\bexample\b/i.test(value)) throw new Error('Use a made-up club name containing Example for this test.');
   let normalized = value;
   if (key === 'number' && !/^\d{1,6}$/.test(value)) throw new Error('Meeting number must be a number, like 43.');

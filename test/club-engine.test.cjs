@@ -85,3 +85,9 @@ test('START from the pilot link resumes an existing Secretary without resetting 
  assert.equal(f.registry.clubs.length,count);assert.deepEqual(f.A.state.board,before.board);assert.deepEqual(f.A.state.meeting,before.meeting);assert.deepEqual(f.A.state.groupLink,before.groupLink);assert.deepEqual(f.A.state.helperGroupPost,before.helperGroupPost);assert.deepEqual(f.A.state.memberLive,before.memberLive);
  assert.equal(f.sent.length,1);assert.equal(f.sent[0].jid,a.secretaryId);assert.match(f.sent[0].content.text,/TABLE.*EDIT/);
 });
+test('real pilot completes venue setup and explicit group posting with natural commands on its own group',async()=>{
+ const f=fixture();f.B.state=null;f.B.target=null;const e=f.create(f.B,{pilotMode:true});let id=0;const send=text=>e.command(command('real-'+(++id),text));
+ for(const text of ['START','Speaker 1: Zara Finch','APPROVE','Cedar Speakers Club','42','Sunday','11:00 AM','Cedar Hall','Monday 19:00','8:10 PM','APPROVE'])await send(text);
+ assert.equal(f.B.state.stage,'complete');assert.equal(f.B.state.meeting.venue,'Cedar Hall');await send('CONNECT GROUP Example B');assert.equal(f.B.target.pilotMode,true);assert.equal(f.B.target.secretaryId,b.secretaryId);await send('POST BOARD');assert.equal(f.B.state.helperGroupPost.status,'sent');assert.equal(f.B.state.outbox.length,0);
+ assert.ok(f.sent.some(s=>s.jid===tB.groupId&&s.png));assert.equal(f.A.state.meeting.venue,undefined);
+});

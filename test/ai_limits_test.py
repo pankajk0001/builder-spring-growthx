@@ -41,3 +41,15 @@ class CallLimits(unittest.TestCase):
         with self.assertRaises(ValueError):
             helper.reserve_call('fictional test input', self.ledger, now=10000)
         self.assertEqual(self.ledger.read_text(), 'broken state')
+
+class PilotInput(unittest.TestCase):
+    def test_authorized_pilot_accepts_ordinary_fictional_names(self):
+        helper.validate_payload({'pilotAuthorized': True, 'board': [{'role': 'Timer', 'member': 'Mira Vale'}], 'messages': [{'id': 'member-live-madeup', 'sender': 'Mira Vale', 'text': 'I cannot make it'}]})
+
+    def test_legacy_runner_still_rejects_real_mode_without_authorization(self):
+        with self.assertRaises(ValueError):
+            helper.validate_payload({'testOnly': True, 'board': [{'role': 'Timer', 'member': 'Mira Vale'}], 'messages': [{'id': 'fictional-madeup', 'sender': 'Mira Vale', 'text': 'Timer'}]})
+
+    def test_pilot_rejects_unverified_message_sources(self):
+        with self.assertRaises(ValueError):
+            helper.validate_payload({'pilotAuthorized': True, 'board': [{'role': 'Timer', 'member': None}], 'messages': [{'id': 'random-chat', 'sender': 'Mira Vale', 'text': 'Timer'}]})

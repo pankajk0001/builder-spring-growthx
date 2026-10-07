@@ -9,7 +9,7 @@ import time
 MODEL = 'gpt-6.1-sol'
 PROVIDER = 'openai-codex'
 MAX_OUTPUT = 500
-INSTRUCTIONS = '''You interpret fictional Toastmasters role-board messages only.
+INSTRUCTIONS = '''You interpret Toastmasters role-board messages only.
 Return ONLY a JSON array, one object for each message in input order:
 {"messageId":"original id","intent":"take|drop|ignore|clarify","role":"exact board role"}.
 Omit role for ignore and clarify. Use sender as the claimant; never invent a person.
@@ -48,16 +48,32 @@ def reserve_call(prompt, ledger_path=None, now=None):
         os.fsync(file.fileno())
 
 
+def validate_payload(payload):
+    messages = payload.get('messages')
+    board = payload.get('board')
+    if not isinstance(messages, list) or len(messages) > 300 or not isinstance(board, list) or not board:
+        raise ValueError('Use a role board and at most 300 messages.')
+    if any(not isinstance(m, dict) or not isinstance(m.get('id'), str) or
+           not isinstance(m.get('sender'), str) or not m['sender'].strip() or len(m['sender']) > 120 or
+           not isinstance(m.get('text'), str) or not m['text'].strip() or len(m['text']) > 5000 for m in messages):
+        raise ValueError('Invalid role-board message.')
+    if payload.get('pilotAuthorized') is True:
+        if any(not m['id'].startswith(('member-live-', 'fictional-live-')) for m in messages):
+            raise ValueError('Pilot messages must come from the verified group reader.')
+        return
+    if payload.get('testOnly') is not True or any(
+        not message['id'].startswith('fictional-') or
+        not message['sender'].endswith(' Example') for message in messages
+    ) or any(row.get('member') is not None and not row['member'].endswith(' Example') for row in board):
+        raise ValueError('This milestone runner accepts fictional test data only.')
+
+
 def main():
     payload = json.load(sys.stdin)
     messages = payload.get('messages')
     if not isinstance(messages, list) or len(messages) > 300:
         raise ValueError('Use at most 300 messages.')
-    if payload.get('testOnly') is not True or any(
-        not message.get('id', '').startswith('fictional-') or
-        not message.get('sender', '').endswith(' Example') for message in messages
-    ) or any(row.get('member') is not None and not row['member'].endswith(' Example') for row in payload['board']):
-        raise ValueError('This milestone runner accepts fictional test data only.')
+    validate_payload(payload)
     prompt = json.dumps({'board': payload['board'], 'messages': messages})
     instructions = INSTRUCTIONS
     if payload.get('task') == 'availability':

@@ -12,5 +12,5 @@ test('published landing build resolves assets and navigation without exposing pr
  for(const match of html.matchAll(/(?:src|href)="\.\/([^"]+)"/g))assert.ok(existsSync(join(dist,match[1])),`Missing public asset: ${match[1]}`);
  for(const match of html.matchAll(/href="#([^"]+)"/g))assert.ok(html.includes(`id="${match[1]}"`),`Missing link target: ${match[1]}`);
  assert.match(html,/href="https:\/\/wa\.me\/15550000001\?text=START">Join the pilot/);assert.ok(!html.includes('{{HELPER_WHATSAPP_URL}}'));
- assert.match(html,/See how it works/);assert.match(html,/public onboarding is not open yet/);
+ assert.match(html,/See how it works/);assert.match(html,/Real-club onboarding is available in the pilot/);
 });

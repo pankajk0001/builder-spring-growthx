@@ -7,13 +7,14 @@ function imageInputHash({ board, meeting }) {
     role, member, removed: !!removed,
   })).sort((a, b) => a.role.localeCompare(b.role, 'en'));
   const details = Object.fromEntries(['club', 'number', 'date', 'time', 'badge'].map(key => [key, meeting[key]]));
+  if(typeof meeting.venue==='string'&&meeting.venue.trim())details.venue=meeting.venue;
   return sha256(JSON.stringify({ board: roles, meeting: details }));
 }
 
 function captureImageSnapshot(input, rendered) {
   return {
     inputHash: imageInputHash(input), sha256: sha256(rendered.png),
-    pngBase64: rendered.png.toString('base64'), cells: structuredClone(rendered.cells),
+    pngBase64: rendered.png.toString('base64'), cells: structuredClone(rendered.cells),venueLines:rendered.venueLines,
     width: rendered.width, height: rendered.height,
   };
 }
@@ -27,6 +28,6 @@ function restoreImageSnapshot(input, snapshot) {
       !Array.isArray(snapshot.cells)) {
     throw new Error('The preserved board image is damaged; sending is blocked.');
   }
-  return { png, cells: structuredClone(snapshot.cells), width: snapshot.width, height: snapshot.height };
+  return { png, cells: structuredClone(snapshot.cells), width: snapshot.width, height: snapshot.height,venueLines:snapshot.venueLines };
 }
 module.exports = { captureImageSnapshot, restoreImageSnapshot };

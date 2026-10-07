@@ -31,7 +31,7 @@ function ensureLive(state){
   seen:sameWeek?old.seen:[],inbox:sameWeek?old.inbox:[],posts:sameWeek?old.posts:{},dirty:false,nextAt:null}};
 }
 function groupRoleMessage(event,state,target){
- if(state.testOnly!==true||(target.name!=='Test_group'&&target.testOnly!==true)||target.groupId!==state.targetGroupId||!state.live||!['notify','append'].includes(event.type))return null;
+ if(!((state.testOnly===true&&(target.name==='Test_group'||target.testOnly===true))||(state.pilotMode===true&&target.pilotMode===true&&target.secretaryId===state.secretaryId))||target.groupId!==state.targetGroupId||!state.live||!['notify','append'].includes(event.type))return null;
  const message=event.message,key=message?.key;
  if(key?.remoteJid!==target.groupId||!key.id||state.ownIds?.includes(key.id))return null;
  const timestamp=Number(message.messageTimestamp)*1000;
@@ -42,6 +42,19 @@ function groupRoleMessage(event,state,target){
  const actor=normalize(key.participant||state.secretaryId);
  const secretaryActors=[normalize(state.secretaryId),normalize(state.secretaryLid)].filter(Boolean);
  const trustedSecretary=[actor,normalize(key.participantAlt)].some(id=>id&&secretaryActors.includes(id));
+ let testAlias=text.trim();while(testAlias.length>2&&['*','_','~'].includes(testAlias[0])&&testAlias.at(-1)===testAlias[0])testAlias=testAlias.slice(1,-1).trim();
+ const simulated=target.testOnly===true&&trustedSecretary&&/^([\p{L}\p{N} .'-]{1,80} Example):\s*([\s\S]+)$/u.test(testAlias);
+ if(state.pilotMode===true&&!simulated){
+  if(!key.participant)return null;
+  const actors=[actor,normalize(key.participantAlt)].filter(Boolean);
+  const account=actors.find(id=>id.endsWith('@s.whatsapp.net'))||actor;
+  const actorKey=createHash('sha256').update(account).digest('hex');
+  const actorKeys=[...new Set(actors.map(id=>createHash('sha256').update(id).digest('hex')))];
+  const held=state.live.board.find(row=>row.member&&(row.memberId===actorKey||row.memberIds?.some(id=>actorKeys.includes(id))));
+  const display=typeof message.pushName==='string'?message.pushName.trim().replace(/\s+/g,' ').slice(0,120):'';
+  return {id:'member-live-'+createHash('sha256').update(key.id+'|'+account).digest('hex'),actorKey,actorKeys,sender:held?.member||display||'Member',identityUnclear:!held&&!display,text:text.trim(),timestamp};
+ }
+
  let sender='Member '+createHash('sha256').update(actor).digest('hex').slice(0,8)+' Example';
  // The paired test phone can act out fictional members; other members cannot impersonate them.
  let aliasText=text.trim();
@@ -69,23 +82,32 @@ function applyLiveBatch(state,messages,decisions){
  for(let i=0;i<messages.length;i++){
   const source=messages[i];let decision=decisions[i];
   if(decision?.messageId!==source.id||!['check','take','drop','ignore','clarify'].includes(decision.intent))throw Error('Invalid or reordered member decisions.');
-  const existing=board.find(row=>row.member&&memberKey(row.member)===memberKey(source.sender));
+  const matchesActor=row=>source.actorKey&&(row.memberId===source.actorKey||row.memberIds?.some(id=>source.actorKeys?.includes(id)));
+  const nameMatch=board.find(row=>row.member&&memberKey(row.member)===memberKey(source.sender));
+  const existing=source.actorKey?board.find(row=>row.member&&matchesActor(row)):nameMatch;
+  if(source.identityUnclear&&decision.intent!=='ignore')decision={messageId:source.id,intent:'clarify'};
   // Resolve this explicit, role-free withdrawal from saved ownership, not an AI guess.
   const explicitAbsence=/^i (?:can['’]t|cannot|can not) make it[.!]?$/i.test(source.text.trim());
   if(explicitAbsence){
-   const held=board.filter(row=>!row.removed&&row.member&&memberKey(row.member)===memberKey(source.sender));
+   const held=board.filter(row=>!row.removed&&row.member&&(source.actorKey?matchesActor(row):memberKey(row.member)===memberKey(source.sender)));
    if(held.length===1)decision={messageId:source.id,intent:'drop',role:held[0].role};
-   else if(held.length===0&&live.publishedBoard.some(row=>!row.removed&&row.member&&memberKey(row.member)===memberKey(source.sender)))decision={messageId:source.id,intent:'ignore'};
+   else if(held.length===0&&live.publishedBoard.some(row=>!row.removed&&row.member&&(source.actorKey?matchesActor(row):memberKey(row.member)===memberKey(source.sender))))decision={messageId:source.id,intent:'ignore'};
    else decision={messageId:source.id,intent:'clarify'};
   }
   const message={...source,sender:existing?.member||source.sender};
   const role=board.find(row=>row.role===decision.role&&!row.removed);
+  if(source.actorKey&&((decision.intent==='drop'&&role?.member&&!matchesActor(role))||(decision.intent==='take'&&role?.member===null&&nameMatch&&!existing))){
+   notes.push(`I couldn’t verify ${source.sender}’s account against the saved role holder. Please check their message and use EDIT to make the correction.\nMessage: ${source.text}`);continue;
+  }
   if(decision.intent==='take'&&role?.member===null&&existing&&existing.role!==role.role){
    notes.push('Secretary: '+message.sender+' already holds '+existing.role+'. Please clarify their request for '+role.role+'. No assignment was changed.');continue;
   }
   const result=respondToRoles(board,[message],[decision]);
-  for(const note of result.notes)if(note.kind==='clarify')notes.push(note.text+'\nMessage: '+source.text);
-  if(!isDeepStrictEqual(board,result.board)){board=result.board;changedAt=source.timestamp;}
+  for(const note of result.notes)if(note.kind==='clarify')notes.push(state.pilotMode?`I need your help with ${source.sender}’s reply.\nMessage: ${source.text}\nNo role changed. Please use EDIT to confirm the correction.`:note.text+'\nMessage: '+source.text);
+  if(!isDeepStrictEqual(board,result.board)){board=result.board;
+   if(source.actorKey&&decision.intent==='take'){const changed=board.find(row=>row.role===decision.role);changed.memberId=source.actorKey;changed.memberIds=source.actorKeys||[source.actorKey];}
+   if(source.actorKey&&decision.intent==='drop'){const changed=board.find(row=>row.role===decision.role);delete changed.memberId;delete changed.memberIds;}
+   changedAt=source.timestamp;}
  }
  assertUniqueRoleHolders(board);
  const dirty=!isDeepStrictEqual(board,live.publishedBoard);
@@ -98,7 +120,7 @@ function dailyDecision(state,now=Date.now()){
  const live=state.live;
  if(!live?.dirty||!live.nextAt||isDeepStrictEqual(live.board,live.publishedBoard))return 'unchanged';
  if(state.status!=='approved'||state.editSession||state.groupPost?.status!=='sent')return 'paused';
- if(state.testOnly!==true||live.authorization.groupId!==state.targetGroupId||!live.authorization.initialApprovedHash)throw Error('Automatic changes require initial board approval for this test group.');
+ if((state.testOnly!==true&&state.pilotMode!==true)||live.authorization.groupId!==state.targetGroupId||!live.authorization.initialApprovedHash)throw Error('Automatic changes require initial board approval for this test group.');
  const attempt=live.posts[live.nextAt];
  if(attempt?.status==='sent')return 'complete';
  if(attempt)return 'uncertain';

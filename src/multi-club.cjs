@@ -12,7 +12,7 @@ function validateRegistry(registry){
   if(typeof club.id!=='string'||!club.id||ids.has(club.id))throw Error('Duplicate club record.');ids.add(club.id);
   for(const person of [club.identity.secretaryId,club.identity.secretaryLid].filter(Boolean)){if(people.has(person))throw Error('A Secretary identity belongs to more than one club.');people.add(person);}
   if(club.target){
-   if(club.target.testOnly!==true||!/^\d+(?:-\d+)?@g\.us$/.test(club.target.groupId)||typeof club.target.name!=='string'||!club.target.name.trim())throw Error('A verified test-group destination is required.');
+   if(!(club.target.testOnly===true||club.target.pilotMode===true&&club.target.secretaryId===club.identity.secretaryId)||!/^\d+(?:-\d+)?@g\.us$/.test(club.target.groupId)||typeof club.target.name!=='string'||!club.target.name.trim())throw Error('A verified test-group destination is required.');
    if(groups.has(club.target.groupId))throw Error('That group already belongs to another Secretary.');groups.add(club.target.groupId);
   }
  }

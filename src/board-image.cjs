@@ -85,7 +85,8 @@ function renderBoardImage({ board, meeting, imageSnapshot }) {
   const clubLines = wrap(measure, meeting.club, WIDTH - 114);
   useFont(measure, 16, true);
   const meetingLines = wrap(measure, `Meeting #${meeting.number} · ${meeting.date} at ${meeting.time}`, WIDTH - 114);
-  const headerHeight = Math.max(84, (clubLines.length + meetingLines.length) * 25 + 28);
+  const venueLines=typeof meeting.venue==='string'&&meeting.venue.trim()?wrap(measure,`Venue: ${meeting.venue}`,WIDTH-114):[];
+  const headerHeight = Math.max(84, (clubLines.length + meetingLines.length + venueLines.length) * 25 + 28);
   const logicalHeight = headerHeight + planned.reduce((sum, row) => sum + row.height, 0) + 40;
   // A square image preserves the whole board in a square chat thumbnail.
   // Extra-long content expands the canvas rather than clipping any row.
@@ -110,9 +111,10 @@ function renderBoardImage({ board, meeting, imageSnapshot }) {
   ctx.fillStyle = BLUE; ctx.fillRect(14, headerHeight / 2 - 13, 70, 26);
   drawLines([meeting.badge], 49, headerHeight / 2 - 11, 18, true);
   const textX = 100 + (WIDTH - 114) / 2;
-  const headerTop = (headerHeight - (clubLines.length + meetingLines.length) * 25) / 2;
+  const headerTop = (headerHeight - (clubLines.length + meetingLines.length + venueLines.length) * 25) / 2;
   drawLines(clubLines, textX, headerTop, 20, true, 25);
   drawLines(meetingLines, textX, headerTop + clubLines.length * 25, 16, true, 25);
+  if(venueLines.length)drawLines(venueLines,textX,headerTop+(clubLines.length+meetingLines.length)*25,16,true,25);
 
   let y = headerHeight;
   for (const row of planned) {
@@ -154,7 +156,7 @@ function renderBoardImage({ board, meeting, imageSnapshot }) {
     y += row.height;
   }
   drawLines(['ALL THE BEST EVERYONE'], WIDTH / 2, y + 9, 23, true);
-  return { png: canvas.encodeSync('png'), cells, width: canvas.width, height: canvas.height };
+  return { png: canvas.encodeSync('png'), cells, venueLines, width: canvas.width, height: canvas.height };
 }
 function measureWithFont(ctx, size) { useFont(ctx, size); return ctx; }
 

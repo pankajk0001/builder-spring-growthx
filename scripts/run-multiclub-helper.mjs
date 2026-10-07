@@ -30,7 +30,7 @@ const engines=new Map();
 function engine(club){
  if(!engines.has(club.id)){
   const acknowledgementIdentity={get secretaryId(){return club.identity.secretaryId;},get secretaryLid(){return club.identity.secretaryLid;},get targetGroupId(){return club.target?.groupId;}};
-  engines.set(club.id,createClubEngine({registry,club,socket:sock,helper,acknowledgements:createMessageAckTracker(sock.ev,acknowledgementIdentity,30000),save,interpret:interpretFictionalMessages,status,enableMembers:config.enableMemberReplies!==false}));
+  engines.set(club.id,createClubEngine({registry,club,socket:sock,helper,acknowledgements:createMessageAckTracker(sock.ev,acknowledgementIdentity,30000),save,interpret:interpretFictionalMessages,status,enableMembers:config.enableMemberReplies!==false,pilotMode:true}));
  }
  return engines.get(club.id);
 }
