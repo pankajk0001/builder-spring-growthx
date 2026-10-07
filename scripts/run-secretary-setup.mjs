@@ -8,6 +8,8 @@ const require=createRequire(import.meta.url);
 const selectGroupRequested=process.argv.includes('--select-test-group');
 const checkGroupRequested=process.argv.includes('--check-group')||selectGroupRequested;
 const {incoming,applySetup}=require('../src/secretary-setup.cjs');
+const {activateMembers,readMember,queueMember,applyMembers,deliverMemberUpdate,scheduleMemberTest}=require('../src/helper-members.cjs');
+const {interpretFictionalMessages}=require('../src/hermes-intent.cjs');
 const {acceptHelperChat,checkGroup,approvedImage,connectGroup,postGroup}=require('../src/helper-group-connection.cjs');
 const {isSecretaryChat}=require('../src/approval-inbox.cjs');
 const {renderBoardImage}=require('../src/board-image.cjs');
@@ -31,7 +33,7 @@ const helperIdentity={secretaryId:b.jidNormalizedUser(auth.creds.me.id),secretar
 const target={name:config.targetGroupName||'Test_group',groupId:config.targetGroupId,testOnly:true};
 const {version}=await b.fetchLatestBaileysVersion();
 const sock=b.makeWASocket({auth,version,logger:pino({level:'silent'}),syncFullHistory:false,markOnlineOnConnect:false,shouldIgnoreJid:jid=>!acceptHelperChat(jid,config)});
-let credentials=Promise.resolve(),queue=Promise.resolve(),accepting=false,resolveEnd;
+let credentials=Promise.resolve(),queue=Promise.resolve(),accepting=false,resolveEnd,memberTimer;
 const finished=new Promise(resolve=>resolveEnd=resolve),ack=createMessageAckTracker(sock.ev,config,30000);
 sock.ev.on('creds.update',()=>{credentials=credentials.then(saveCreds);});
 async function flush(){
@@ -52,6 +54,34 @@ async function flush(){
   await ack.wait(item.sentId);
   if(item.kind==='preview')state.lastPreviewServerAckVerified=true;
   state.outbox.shift();await save();status('Private setup reply acknowledged.');
+ }
+}
+async function ensureMembers(){
+ if(!config.enableMemberReplies||state?.stage!=='complete'||!state.groupLink?.connected||state.helperGroupPost?.status!=='sent')return;
+ if(!state.memberLive){state=activateMembers(state,target,config);await save();}
+ if(!state.memberGuideSent){
+  state.memberGuideSent=true;state.outbox.push({kind:'text',text:`Member reply test is ready in ${target.name}. Use made-up names in the group, for example Noah Example: I will take Grammarian. Reply TABLE privately to see current roles. Filled roles stay protected; unclear requests stay private.`});await save();await flush();
+ }
+}
+async function processMembers(){
+ const live=state?.memberLive;
+ if(!state?.groupLink?.connected||!live?.inbox.length||live.retryAt>Date.now())return;
+ try{
+  if(!live.pendingBatch){const messages=live.inbox.slice(0,10);const result=await interpretFictionalMessages(live.board,messages,'availability');live.pendingBatch={messages,decisions:result.decisions};await save();}
+  state=applyMembers(state,live.pendingBatch.messages,live.pendingBatch.decisions,target,config);
+  scheduleMemberTest(state);await save();await flush();
+  status('Group replies interpreted; current roles saved privately.');
+ }catch{
+  state.memberLive.retryAt=Date.now()+180000;
+  if(!state.memberLive.failureNotified){state.memberLive.failureNotified=true;state.outbox.push({kind:'text',text:'[ask the secretary to try again in few minutes]'});}
+  await save();await flush();status('Member interpretation paused; messages preserved for retry.');
+ }
+}
+async function memberTick(){
+ await ensureMembers();await processMembers();
+ if(state?.memberLive&&state.groupLink?.connected){
+  try{if(await deliverMemberUpdate({state,target,identity:config,helper:helperIdentity,socket:sock,acknowledgements:ack,save})){await flush();status('Changed group board delivered; private confirmation acknowledged.');}}
+  catch(error){if(!state.memberDeliveryFailureNotified){state.memberDeliveryFailureNotified=true;state.outbox.push({kind:'text',text:error.message});await save();await flush();}}
  }
 }
 const start=Date.now();
@@ -85,12 +115,17 @@ sock.ev.on('connection.update',update=>{
   }
   await flush();
   if(checkGroupRequested)resolveEnd();
+  else if(config.enableMemberReplies){await ensureMembers();clearInterval(memberTimer);memberTimer=setInterval(()=>enqueue(memberTick),15000);}
  });}
  if(update.connection==='close'){accepting=false;process.exitCode=1;resolveEnd();}
 });
 sock.ev.on('messages.upsert',event=>{
- if(!accepting||event.type!=='notify')return;
- for(const message of event.messages){const command=incoming(message,config,start);if(command)enqueue(async()=>{
+ if(!accepting||!['notify','append'].includes(event.type))return;
+ for(const message of event.messages){
+  if(config.enableMemberReplies&&message.key?.remoteJid===target.groupId){
+   enqueue(async()=>{await ensureMembers();const member=readMember({type:event.type,message:{...message,message:b.extractMessageContent(message.message)}},state,target,config);if(member){state=queueMember(state,member,target,config);await save();}});continue;
+  }
+  const command=event.type==='notify'?incoming(message,config,start):null;if(command)enqueue(async()=>{
   if(/^(CONNECT TEST GROUP|POST TEST BOARD)$/i.test(command.text)&&state){
    if(!state.seen.includes(command.id)){
     state.seen.push(command.id);await save();
@@ -101,9 +136,9 @@ sock.ev.on('messages.upsert',event=>{
     }catch(error){state.outbox.push({kind:'text',text:error.message});}
    }
   }else{state=applySetup(state,command);}
-  await save();await flush();status(`Private setup stage: ${state?.stage||'waiting'}.`);
+  await save();await flush();await ensureMembers();status(`Private setup stage: ${state?.stage||'waiting'}.`);
  });}
 
 });
-for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{accepting=false;resolveEnd();});
-await finished;accepting=false;await queue;sock.end(new Error('Setup runner stopped'));await credentials;
+for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{accepting=false;clearInterval(memberTimer);resolveEnd();});
+await finished;accepting=false;clearInterval(memberTimer);await queue;sock.end(new Error('Setup runner stopped'));await credentials;

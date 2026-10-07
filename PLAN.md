@@ -238,3 +238,11 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Build only public web assets, host on the existing Convex site, and verify desktop/mobile behavior in the browser. WhatsApp services remain separate.
 
 - Landing page implemented and published to the existing production Convex site for review. Desktop and mobile Chrome checks verify the example controls, primary link, FAQ, assets, no horizontal overflow and no browser errors. Public build copies six explicitly approved assets; all 166 tests pass. User reviewed the live page and requested no changes; milestone confirmed.
+
+## Milestone 16 — member replies on the spare helper (confirmed)
+
+- Read fresh replies only in the privately verified test group after a confirmed approved-board post. Reuse the existing capped subscription-only Hermes interpreter and role rules. Protect holders, enforce one role per person, handle withdrawals, and send ambiguity/retry notices only privately.
+- Keep current roles in private TABLE; send only changed-board images at 20:00 India time through the day before the displayed meeting. Persist inbox, decisions, scheduled sends and receipts; block uncertain repeats.
+- User authorized one two-minute changed-board phone test, then return to normal scheduling. All members and messages in this pilot remain fictional; no real-club launch or broader access.
+
+- Phone test confirmed: a fresh fictional group claim assigned Grammarian through the hosted Hermes interpreter. No early post; one updated image was delivered after the authorized two-minute time, with exact image hash and WhatsApp server acknowledgement. All four filled roles and 11 open roles verified; private success acknowledged. Short-test permission consumed; normal changed-board timing restored to 20:00 India time. Restart retained roles, inbox decisions and delivery records without another image. All 170 tests and four hosted member-flow checks pass. Holder protection, withdrawals, one-role limits, clarification privacy, freshness, uncertainty and normal scheduling have automated coverage; those additional live phone scenarios remain optional follow-up checks.

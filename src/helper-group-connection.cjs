@@ -51,4 +51,4 @@ async function postGroup({state,target,identity,helper,socket,acknowledgements,s
  state.helperGroupPost={...state.helperGroupPost,status:'sent',serverAckVerified:true};
  state.outbox.push({kind:'text',text:`Your approved board was posted to ${target.name}. Check every role in the group image. Reply TABLE here to check the saved roles.`});await save();return true;
 }
-module.exports={acceptHelperChat,checkGroup,approvedImage,connectGroup,postGroup};
+module.exports={acceptHelperChat,checkGroup,verifyMembership,approvedImage,connectGroup,postGroup};

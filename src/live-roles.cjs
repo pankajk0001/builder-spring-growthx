@@ -31,7 +31,7 @@ function ensureLive(state){
   seen:sameWeek?old.seen:[],inbox:sameWeek?old.inbox:[],posts:sameWeek?old.posts:{},dirty:false,nextAt:null}};
 }
 function groupRoleMessage(event,state,target){
- if(state.testOnly!==true||target.name!=='Test_group'||target.groupId!==state.targetGroupId||!state.live||!['notify','append'].includes(event.type))return null;
+ if(state.testOnly!==true||(target.name!=='Test_group'&&target.testOnly!==true)||target.groupId!==state.targetGroupId||!state.live||!['notify','append'].includes(event.type))return null;
  const message=event.message,key=message?.key;
  if(key?.remoteJid!==target.groupId||!key.id||state.ownIds?.includes(key.id))return null;
  const timestamp=Number(message.messageTimestamp)*1000;

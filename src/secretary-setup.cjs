@@ -32,7 +32,7 @@ function applySetup(state,command,now=Date.now()){
  s.seen.push(command.id);
  const text=command.text;
  try{
- if(/^TABLE$/i.test(text)){s.outbox.push({kind:'text',text:renderTable(s.board)});return s;}
+ if(/^TABLE$/i.test(text)){s.outbox.push({kind:'text',text:renderTable(s.memberLive?.board||s.board)});return s;}
  if(s.stage==='complete'){s.outbox.push({kind:'text',text:'Your private setup is saved. Group connection is the next step; no group posts are enabled.'});return s;}
  if(['sample','final'].includes(s.stage)){
   if(isApproval(text)){
