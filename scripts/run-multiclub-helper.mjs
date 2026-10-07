@@ -10,7 +10,7 @@ const {createClubEngine}=require('../src/club-engine.cjs');
 const {incoming}=require('../src/secretary-setup.cjs');
 const {isSecretaryChat}=require('../src/approval-inbox.cjs');
 const {createMessageAckTracker}=require('../src/message-ack.cjs');
-const {interpretFictionalMessages}=require('../src/hermes-intent.cjs');
+const {interpretFictionalMessages,interpretSecretaryMessage}=require('../src/hermes-intent.cjs');
 const dir=join(homedir(),'.hermes','the-helper');
 const config=JSON.parse(await readFile(join(dir,'helper-account.json'),'utf8'));
 require('../src/test-group.cjs').assertRunnerHome(config,homedir());
@@ -30,7 +30,7 @@ const engines=new Map();
 function engine(club){
  if(!engines.has(club.id)){
   const acknowledgementIdentity={get secretaryId(){return club.identity.secretaryId;},get secretaryLid(){return club.identity.secretaryLid;},get targetGroupId(){return club.target?.groupId;}};
-  engines.set(club.id,createClubEngine({registry,club,socket:sock,helper,acknowledgements:createMessageAckTracker(sock.ev,acknowledgementIdentity,30000),save,interpret:interpretFictionalMessages,status,enableMembers:config.enableMemberReplies!==false,pilotMode:true}));
+  engines.set(club.id,createClubEngine({registry,club,socket:sock,helper,acknowledgements:createMessageAckTracker(sock.ev,acknowledgementIdentity,30000),save,interpret:interpretFictionalMessages,interpretSecretary:interpretSecretaryMessage,status,enableMembers:config.enableMemberReplies!==false,pilotMode:true}));
  }
  return engines.get(club.id);
 }

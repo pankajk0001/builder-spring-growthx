@@ -43,6 +43,13 @@ class CallLimits(unittest.TestCase):
         self.assertEqual(self.ledger.read_text(), 'broken state')
 
 class PilotInput(unittest.TestCase):
+    def test_secretary_translation_requires_verified_private_source(self):
+        payload = {'task': 'secretary', 'secretaryAuthorized': True, 'board': [{'role': 'Timer', 'member': 'Mira Vale'}], 'messages': [{'id': 'secretary-live-example', 'sender': 'Secretary', 'text': 'make priya the timer'}]}
+        helper.validate_payload(payload)
+        for patch in [{'secretaryAuthorized': False}, {'messages': [{'id': 'member-live-example', 'sender': 'Secretary', 'text': 'Timer'}]}]:
+            with self.assertRaises(ValueError):
+                helper.validate_payload({**payload, **patch})
+
     def test_authorized_pilot_accepts_ordinary_fictional_names(self):
         helper.validate_payload({'pilotAuthorized': True, 'board': [{'role': 'Timer', 'member': 'Mira Vale'}], 'messages': [{'id': 'member-live-madeup', 'sender': 'Mira Vale', 'text': 'I cannot make it'}]})
 

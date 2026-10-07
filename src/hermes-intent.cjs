@@ -32,8 +32,9 @@ async function interpretFictionalMessages(board, messages, task = 'update', opti
       if (error || result.error) return reject(new Error(result.error || 'Hermes AI call failed.'));
       resolveResult(result);
     });
-    child.stdin.end(JSON.stringify({ testOnly: !options.pilotAuthorized, pilotAuthorized: options.pilotAuthorized===true, board, messages, task }));
+    child.stdin.end(JSON.stringify({ testOnly: !options.pilotAuthorized, pilotAuthorized: options.pilotAuthorized===true, secretaryAuthorized:options.secretaryAuthorized===true, context:options.context, board, messages, task }));
   });
 }
 
-module.exports = { interpretFictionalMessages, getHermesRuntimeCommand };
+const interpretSecretaryMessage=(board,messages,context)=>interpretFictionalMessages(board,messages,'secretary',{secretaryAuthorized:true,context});
+module.exports = { interpretFictionalMessages, interpretSecretaryMessage, getHermesRuntimeCommand };

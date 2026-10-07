@@ -9,7 +9,9 @@ const {captureImageSnapshot}=require('./board-image-snapshot.cjs');
 const {sendPrivateBoardPreview}=require('./preview-delivery.cjs');
 const {assertPrivateSendReceipt}=require('./note-delivery.cjs');
 const {queueClubReminder}=require('./club-reminders.cjs');
-function createClubEngine({registry,club,socket,helper,acknowledgements,save,interpret,now=Date.now,status=()=>{},sendPreview=sendPrivateBoardPreview,sendImage,enableMembers=true,pilotMode=false}){
+const {translateSecretary}=require('./secretary-language.cjs');
+const {begin}=require('./secretary-setup.cjs');
+function createClubEngine({registry,club,socket,helper,acknowledgements,save,interpret,interpretSecretary,now=Date.now,status=()=>{},sendPreview=sendPrivateBoardPreview,sendImage,enableMembers=true,pilotMode=false}){
  const identity=club.identity;
  const options=()=>({state:club.state,target:club.target,identity,helper,socket,acknowledgements,save,...(sendImage?{sendImage}:{})});
  async function flush(){
@@ -60,6 +62,24 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
  async function command(command){
   let s=club.state;
   if(pilotMode&&s){s.pilotMode=true;s.chatVersion=2;}if(s?.seen.includes(command.id))return;
+  if(interpretSecretary){
+   const translated=await translateSecretary(s,command,interpretSecretary);
+   if(s)delete s.secretaryQuestion;
+   if(translated.question){
+    if(!s)club.state=s=begin(now(),{pilotMode});
+    if(translated.pending)s.secretaryQuestion=translated.pending;
+    s.seen.push(command.id);s.outbox.push({kind:'text',text:translated.question});await save();await flush();return;
+   }
+   if(translated.edit&&!s)club.state=s=begin(now(),{pilotMode});
+   if(translated.edit&&s?.stage==='complete'&&!s.memberEdit){
+    club.state=handleHelperEdit(s,{...command,id:command.id+'-open-edit',text:'EDIT'},club.target).state;s=club.state;
+   }
+   command={...command,text:translated.text};
+   // Exact role lines also work directly in a returning Secretary's chat.
+   if(s?.stage==='complete'&&!s.memberEdit&&/^\s*[^:]+:\s*[^:]+/.test(command.text)){
+    club.state=handleHelperEdit(s,{...command,id:command.id+'-open-edit',text:'EDIT'},club.target).state;s=club.state;
+   }
+  }
   const edit=handleHelperEdit(s,command,club.target);
   if(edit.handled)club.state=edit.state;
   else if(/^(CONNECT (?:TEST )?GROUP(?:\s+.+)?|POST (?:TEST )?BOARD)$/i.test(command.text)&&s){
