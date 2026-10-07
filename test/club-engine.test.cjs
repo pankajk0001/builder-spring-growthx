@@ -1,0 +1,72 @@
+const test=require('node:test'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
+const {migrateLegacy,registerSecretary,bindTarget,findSecretary,findGroup}=require('../src/multi-club.cjs');
+const {createClubEngine}=require('../src/club-engine.cjs');
+const {begin,incoming}=require('../src/secretary-setup.cjs');
+const {renderBoardImage}=require('../src/board-image.cjs');
+const now=Date.parse('2026-10-07T12:00:00Z'),a={secretaryId:'111@s.whatsapp.net',secretaryLid:'11@lid'},b={secretaryId:'222@s.whatsapp.net',secretaryLid:'22@lid'},helper={secretaryId:'333@s.whatsapp.net'};
+const tA={name:'Example A',groupId:'123@g.us',testOnly:true},tB={name:'Example B',groupId:'456@g.us',testOnly:true};
+const hash=png=>createHash('sha256').update(png).digest('hex');
+function ready(name){const s=begin(now);s.meeting.club=name;s.meeting.date='10 October 2026';s.stage='complete';const sha=hash(renderBoardImage(s).png);Object.assign(s,{approvedHash:sha,boardHash:sha,previewReceipt:{id:name+'-preview',sha256:sha},lastPreviewServerAckVerified:true});return s;}
+function fixture(){
+ const registry=migrateLegacy({...a,targetGroupId:tA.groupId,targetGroupName:tA.name},ready(tA.name)),A=registry.clubs[0],B=registerSecretary(registry,b);bindTarget(registry,B,tB);B.state=ready(tB.name);
+ const sent=[],calls=[],socket={sendMessage:async(jid,content)=>{sent.push({jid,content});return {key:{remoteJid:jid,fromMe:true,id:'send-'+sent.length}};},groupFetchAllParticipating:async()=>({[tA.groupId]:{subject:tA.name},[tB.groupId]:{subject:tB.name}}),groupMetadata:async jid=>({id:jid,subject:jid===tA.groupId?tA.name:tB.name,participants:[{id:jid===tA.groupId?a.secretaryId:b.secretaryId},{id:helper.secretaryId}]})};
+ const sendImage=async(_socket,target,png)=>{sent.push({jid:target.groupId,png,board:target.name});return {id:'image-'+sent.length,sha256:hash(png)};};
+ const sendPreview=async(_socket,jid,png)=>{sent.push({jid,png});return {id:'preview-'+sent.length,sha256:hash(png)};};
+ const interpret=async(board,messages)=>{calls.push(messages);return {decisions:messages.map(m=>({messageId:m.id,intent:m.text.includes('unclear')?'clarify':'take',role:'Grammarian'}))};};
+ const create=(club,extra={})=>createClubEngine({registry,club,socket,helper,acknowledgements:{wait:async()=>{}},save:async()=>{},interpret,now:()=>now,sendPreview,sendImage,...extra});
+ return {registry,A,B,sent,calls,create,socket};
+}
+const command=(id,text,replyTo)=>({id,text,replyTo});
+function groupMessage(target,who,id,text){return {type:'notify',message:{key:{id,fromMe:false,remoteJid:target.groupId,participant:who.secretaryId},messageTimestamp:now/1000+1,message:{conversation:text}}};}
+test('two club setups, private tables, initial approved images and role replies stay isolated',async()=>{
+ const f=fixture(),eA=f.create(f.A),eB=f.create(f.B);
+ for(const e of [eA,eB]){await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));}
+ assert.equal(f.sent.filter(s=>s.png&&s.jid.endsWith('@g.us')).length,2);
+ const initialA=structuredClone(f.A.state.board),initialB=structuredClone(f.B.state.board);
+ await eA.group(groupMessage(tB,b,'wrong','Noah Example: take Grammarian'));assert.equal(f.A.state.memberLive.inbox.length,0);
+ await eA.group(groupMessage(tA,a,'claim','Noah Example: take Grammarian'));await eB.group(groupMessage(tB,b,'claim','Zara Example: take Grammarian'));
+ await eA.tick();await eB.tick();assert.equal(f.A.state.memberLive.board.find(r=>r.role==='Grammarian').member,'Noah Example');assert.equal(f.B.state.memberLive.board.find(r=>r.role==='Grammarian').member,'Zara Example');
+ assert.deepEqual(f.A.state.board,initialA);assert.deepEqual(f.B.state.board,initialB);
+ f.sent.length=0;await eA.command(command('table','TABLE'));await eB.command(command('table','TABLE'));assert.match(f.sent.find(s=>s.jid===a.secretaryId).content.text,/Noah Example/);assert.doesNotMatch(f.sent.find(s=>s.jid===a.secretaryId).content.text,/Zara Example/);assert.match(f.sent.find(s=>s.jid===b.secretaryId).content.text,/Zara Example/);
+ assert.equal(f.A.state.memberLive.nextAt,'2026-10-07T14:30:00.000Z');assert.equal(f.B.state.memberLive.nextAt,'2026-10-07T14:30:00.000Z');
+});
+test('another club preview cannot approve a correction; clarification stays private to its Secretary',async()=>{
+ const f=fixture(),eA=f.create(f.A),eB=f.create(f.B);for(const e of [eA,eB]){await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));}
+ await eA.command(command('edit','EDIT'));await eA.command(command('change','Timer: Mira Example'));const previewA=f.A.state.memberEdit.previewReceipt.id;
+ await eB.command(command('edit','EDIT'));await eB.command(command('change','Timer: Kira Example'));const before=JSON.stringify(f.B.state);
+ await eA.command(command('approve','APPROVE',f.B.state.memberEdit.previewReceipt.id));assert.equal(f.A.state.memberEdit.stage,'preview');assert.equal(JSON.stringify(f.B.state),before);assert.ok(previewA);
+ await eA.command(command('cancel','CANCEL'));f.sent.length=0;await eA.group(groupMessage(tA,a,'unclear','Noah Example: unclear'));await eA.tick();assert.equal(f.sent.length,1);assert.equal(f.sent[0].jid,a.secretaryId);assert.match(f.sent[0].content.text,/clarify/);
+});
+test('membership and group ownership are checked before a new Secretary can bind a destination',async()=>{
+ const f=fixture(),third=registerSecretary(f.registry,{secretaryId:'444@s.whatsapp.net',secretaryLid:'44@lid'});third.state=ready('Example C');const e=f.create(third);
+ await e.command(command('steal','CONNECT TEST GROUP Example A'));assert.equal(third.target,null);assert.ok(f.sent.some(m=>/Secretary must be a member/.test(m.content?.text||'')));
+ f.socket.groupMetadata=async()=>({id:tA.groupId,subject:tA.name,participants:[{id:third.identity.secretaryId},{id:helper.secretaryId}]});
+ await e.command(command('duplicate','CONNECT TEST GROUP Example A'));assert.equal(third.target,null);assert.match(f.sent.at(-1).content.text,/another Secretary/);
+});
+test('an AI failure in one club does not consume or block another club batch; restart preserves isolation',async()=>{
+ const f=fixture(),eA=f.create(f.A,{interpret:async()=>{throw Error('AI unavailable');}}),eB=f.create(f.B);for(const e of [eA,eB]){await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));}
+ await eA.group(groupMessage(tA,a,'first','Noah Example: take Grammarian'));await eB.group(groupMessage(tB,b,'second','Zara Example: take Grammarian'));await eA.tick();await eB.tick();assert.equal(f.A.state.memberLive.inbox.length,1);assert.equal(f.B.state.memberLive.inbox.length,0);assert.equal(f.B.state.memberLive.board.find(r=>r.role==='Grammarian').member,'Zara Example');
+ const restored=JSON.parse(JSON.stringify(f.registry));assert.equal(findSecretary(restored,a.secretaryLid).state.memberLive.inbox.length,1);assert.equal(findGroup(restored,tB.groupId).state.memberLive.board.find(r=>r.role==='Grammarian').member,'Zara Example');
+});
+test('private incoming messages select only their sender club and cannot use another Secretary identity',()=>{
+ const f=fixture();const message={key:{id:'private',remoteJid:a.secretaryLid,fromMe:false},messageTimestamp:now/1000+1,message:{conversation:'TABLE'}};
+ assert.ok(incoming(message,findSecretary(f.registry,message.key.remoteJid).identity,now));assert.equal(incoming(message,f.B.identity,now),null);assert.equal(findSecretary(f.registry,'999@lid'),null);
+});
+test('a new Secretary completes private setup without modifying the existing club, then selects and posts only their group',async()=>{
+ const f=fixture(),original=JSON.stringify(f.A),second=f.B;second.state=null;second.target=null;const e=f.create(second);
+ let i=0;const send=text=>e.command(command('setup-'+(++i),text));
+ await send('START');assert.equal(second.state.stage,'roles');
+ await send('Speaker 1: Zara Example; Timer: Kira Example');assert.equal(second.state.stage,'sample');assert.equal(second.state.lastPreviewServerAckVerified,true);
+ for(const answer of ['APPROVE','Example B','42','Saturday','2:30 PM','Monday 19:00','19:00','APPROVE'])await send(answer);
+ assert.equal(second.state.stage,'complete');assert.equal(second.state.outbox.length,0);assert.equal(second.target,null);assert.equal(JSON.stringify(f.A),original);
+ await send('CONNECT TEST GROUP Example B');assert.equal(second.target.groupId,tB.groupId);await send('POST TEST BOARD');assert.equal(second.state.helperGroupPost.status,'sent');assert.equal(second.state.memberLive.board.find(r=>r.role==='Timer').member,'Kira Example');assert.equal(JSON.stringify(f.A),original);
+ const images=f.sent.filter(s=>s.png&&s.jid.endsWith('@g.us'));assert.equal(images.length,1);assert.equal(images[0].jid,tB.groupId);
+});
+test('two due changed boards deliver to their own groups and never duplicate after reconstruction',async()=>{
+ const f=fixture();let clock=now;const eA=f.create(f.A,{now:()=>clock}),eB=f.create(f.B,{now:()=>clock});
+ for(const e of [eA,eB]){await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));}
+ await eA.group(groupMessage(tA,a,'claim','Noah Example: take Grammarian'));await eB.group(groupMessage(tB,b,'claim','Zara Example: take Grammarian'));await eA.tick();await eB.tick();
+ clock=Date.parse('2026-10-07T14:30:00Z');f.sent.length=0;await eA.tick();await eB.tick();const images=f.sent.filter(s=>s.png);assert.deepEqual(images.map(s=>s.jid),[tA.groupId,tB.groupId]);
+ for(const club of [f.A,f.B])assert.equal(club.state.memberLive.dirty,false);
+ f.A.state=JSON.parse(JSON.stringify(f.A.state));f.B.state=JSON.parse(JSON.stringify(f.B.state));await eA.tick();await eB.tick();assert.equal(f.sent.filter(s=>s.png).length,2);
+});

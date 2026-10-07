@@ -252,3 +252,18 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - EDIT now opens the latest roles table, including pending member updates, instead of the stale onboarding response. Corrections generate a fresh approval-bound image. Reopening EDIT preserves the draft.
 - TABLE shows the draft text table and matching image preview. APPROVE, EDIT, TABLE and CANCEL are offered; the user confirmed both private deliveries. All 175 local tests and five hosted correction checks pass.
 - Member interpretation and automatic posting pause during corrections. An approved correction is protected against duplicate/uncertain sends and preserves queued member messages. Live approval and corrected-group delivery now verified: both image and private confirmation acknowledged, all five filled roles and ten open roles checked against the exact approved image. The user has confirmed the private options; a separate group-image phone confirmation has not been requested.
+
+## Milestone 17 — multiple Secretaries and clubs (phone-confirmed)
+
+- One shared spare helper account; one club per Secretary. Separate private identities, boards, drafts, approvals, receipts, inboxes and schedules for every club.
+- Reuse the current Oracle server and subscription-only Hermes limits across all clubs; no additional paid service. Keep real identities and messages outside the repository.
+- Preserve the existing Secretary and exact connected test group through migration. New Secretaries start privately with START or give me the role board; all live boards remain fictional during verification.
+- A Secretary chooses their test group privately by name after setup. Verify both memberships, reject ambiguous names, and prevent two Secretaries binding the same group.
+- Test routing, cross-club approval protection, simultaneous role replies, restart, uncertain sends and independent delivery failures. Verify the complete flow with two Secretary accounts in two test WhatsApp groups before marking complete.
+- Pilot website joining flow stays parked until this milestone passes.
+
+- Implementation deployed to the existing Oracle helper service: private versioned club store, legacy state migrated unchanged, per-Secretary command contexts, ownership-checked group selection, isolated member inboxes and scheduled deliveries. All 188 local tests and 11 hosted multi-club checks pass. Service restart succeeded; original board and schedule retained exactly with no duplicate. Awaiting second-account live START/setup and two-group phone verification; not complete.
+
+- Live second-account setup and connection completed: separate private previews and approvals, distinct verified group, approved image server acknowledgement and later Timer claim processed only in the second club. Original club record unchanged; both posted images match exact approved hashes. Current second board has Speaker 1 and Timer filled, 13 open; its changed-board image is pending normal 20:00 India time. Restart retained both records exactly without duplicate sends. Awaiting phone confirmation of the second private TABLE before saving the milestone checkpoint.
+
+- User confirmed the second-account private TABLE. Its send was acknowledged; all 15 roles checked in each club, original record unchanged, and both pending updates remain scheduled for 20:00 India time. Multi-club setup, distinct approved group posts, member interpretation, private routing and restart are verified. The first normal scheduled updates for both clubs have not yet run; two-club scheduled delivery and repeat prevention pass automated tests.
