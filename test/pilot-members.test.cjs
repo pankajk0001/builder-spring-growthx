@@ -22,3 +22,29 @@ test('real mode cannot simulate someone else by putting a name at the start of a
  assert.equal(readMember(event('wrong','Timer','Ada Finch',{remoteJid:'456@g.us'}),s,target,identity),null);
  assert.throws(()=>activateMembers(s,{...target,secretaryId:'999@s.whatsapp.net'},identity));
 });
+test('meeting absence clears the verified sender only, stays quiet on repeats and schedules the updated board',()=>{
+ for(const wording of ["I won't be able to attend the meeting",'I won’t be able to attend the meeting.','I cannot attend the meeting','I will not be able to attend the meeting','I can’t make it']){
+  let s=ready();s=apply(s,event('claim','Timer'),'take','Timer');
+  s.memberLive.board.find(r=>r.role==='Listener').member='Mira Vale';
+  s.memberLive.publishedBoard=structuredClone(s.memberLive.board);s.outbox=[];
+  s=apply(s,event('absence',wording,'Changed Name'),'clarify');
+  const timer=s.memberLive.board.find(r=>r.role==='Timer');assert.equal(timer.member,null);assert.equal(timer.memberId,undefined);
+  assert.equal(s.memberLive.board.find(r=>r.role==='Listener').member,'Mira Vale');assert.equal(s.outbox.length,0);assert.equal(s.memberLive.nextAt,'2026-10-07T14:30:00.000Z');
+  s=apply(s,event('repeat',wording),'clarify');assert.equal(s.outbox.length,0);
+ }
+});
+test('meeting absence never clears another account or guesses an unverified holder',()=>{
+ let s=ready();s=apply(s,event('claim','Timer'),'take','Timer');s.outbox=[];
+ s=apply(s,event('outsider',"I won't be able to attend the meeting",'Ada Finch',{participant:'999@s.whatsapp.net'}),'clarify');
+ assert.equal(s.memberLive.board.find(r=>r.role==='Timer').member,'Ada Finch');assert.equal(s.outbox.length,1);
+ s=ready();s.memberLive.board.find(r=>r.role==='Timer').member='Ada Finch';
+ s=apply(s,event('unverified',"I won't be able to attend the meeting"),'clarify');
+ assert.equal(s.memberLive.board.find(r=>r.role==='Timer').member,'Ada Finch');assert.equal(s.outbox.length,1);
+});
+test('tentative absence, questions and another person’s absence need clarification without clearing a role',()=>{
+ for(const text of ['I might not be able to attend the meeting','I cannot attend the meeting?','Mira cannot attend the meeting','If I cannot attend the meeting, what should I do?']){
+  let s=ready();s=apply(s,event('claim','Timer'),'take','Timer');s.outbox=[];
+  s=apply(s,event('unclear',text),'clarify');
+  assert.equal(s.memberLive.board.find(r=>r.role==='Timer').member,'Ada Finch');assert.equal(s.outbox.length,1);
+ }
+});

@@ -87,7 +87,7 @@ function applyLiveBatch(state,messages,decisions){
   const existing=source.actorKey?board.find(row=>row.member&&matchesActor(row)):nameMatch;
   if(source.identityUnclear&&decision.intent!=='ignore')decision={messageId:source.id,intent:'clarify'};
   // Resolve this explicit, role-free withdrawal from saved ownership, not an AI guess.
-  const explicitAbsence=/^i (?:can['’]t|cannot|can not) make it[.!]?$/i.test(source.text.trim());
+  const explicitAbsence=/^i\s+(?:(?:can['’]t|cannot|can not)\s+make it|(?:can['’]t|cannot|can not|won['’]t|will not)(?:\s+be able to)?\s+attend(?:\s+the meeting)?)[.!]?$/i.test(source.text.trim());
   if(explicitAbsence){
    const held=board.filter(row=>!row.removed&&row.member&&(source.actorKey?matchesActor(row):memberKey(row.member)===memberKey(source.sender)));
    if(held.length===1)decision={messageId:source.id,intent:'drop',role:held[0].role};
