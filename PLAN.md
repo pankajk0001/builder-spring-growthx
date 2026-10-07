@@ -175,6 +175,8 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 
 ## Parked list
 
+- Product information landing page, requested after the separate helper is connected and verified in Test_group. Explain the WhatsApp flow and how to start; retain the zero additional spending requirement. Build only after the group milestone is confirmed.
+
 - Real Secretary launch: one separate helper WhatsApp number, shared across clubs with private board/schedule separation; begin with one real Secretary and club. The user has a spare number, does not have a business account, and requires no additional spending. Oracle Free Tier signup and card verification are accepted. First finish hosted Test_group verification, then define and build Secretary onboarding before authorizing any real-group messages.
 
 - Usual meeting schedule implementation: after reminder day/time and meeting day, ask for the usual meeting time (24-hour or AM/PM, India time). Persist it privately; START sets each fresh board's date from the usual weekday and its time from the usual time. One-off EDIT changes do not replace those defaults. All 143 tests pass. The user saved Sunday 4:30 PM and confirmed the fresh weekly preview auto-filled 11 October at 4:30 PM. Exact preview acknowledged in WhatsApp; no test group post. Restored the previous posted board after the preview test, retaining the saved usual schedule.
@@ -211,3 +213,14 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - Pilot permits only the paired personal Secretary account, using fictional names. Prefilled roles → acknowledged sample → club and meeting settings → reminder and posting times → final private approval.
 - Persist draft and delivery records outside the repository; no group connection or posting in this milestone. No AI calls or new paid services for setup.
 - User completed the private WhatsApp walkthrough and approved the final image. All 157 local tests pass; seven setup checks pass on the server. Restart preserved the complete setup exactly and sent no duplicate replies. Valid entries survive corrections; “Nothing to correct” approves the delivered preview without losing role holders. Group connection remains the next milestone.
+
+## Milestone 14 — connect the separate helper to Test_group (confirmed)
+
+- Secretary adds the spare helper account to the existing Test_group. Verify the exact privately configured group, helper membership and Secretary membership.
+- Bind the completed private setup to this test group, show a private confirmation, and deliver the exact approved fictional board once in a phone-verified test.
+- Preserve private schedules and role holders; prevent duplicate or uncertain sends across restart. Keep the original test-account runner from posting a competing board during the spare-helper test.
+- Real club groups and general multi-club launch remain outside this milestone. Landing page follows its confirmation.
+
+- Connection implementation: exact private Test_group ID and both memberships verified on WhatsApp. Private connection confirmation acknowledged; no group post yet. Old test-account service paused and disabled at boot during the spare-helper pilot to prevent a competing scheduled board; original board and schedule retained privately. All 160 tests pass. Phone command POST TEST BOARD, exact group image check and restart verification remain required.
+
+- User confirmed the spare helper posted the approved board in Test_group. Exact image and every visible role verified; restart preserved the connection, schedules and posted record without duplicate sends. Fixed group receipts being filtered out. First delivery is recorded honestly as phone-confirmed (the original server receipt was missed). All 161 local tests and four hosted group-connection checks pass. Landing page is next; live member updates for the separate account remain future work.

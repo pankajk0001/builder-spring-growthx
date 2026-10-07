@@ -6,6 +6,7 @@ import {readFile,writeFile,rename} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 const require=createRequire(import.meta.url);
 const {incoming,applySetup}=require('../src/secretary-setup.cjs');
+const {acceptHelperChat,connectGroup,postGroup}=require('../src/helper-group-connection.cjs');
 const {isSecretaryChat}=require('../src/approval-inbox.cjs');
 const {renderBoardImage}=require('../src/board-image.cjs');
 const {captureImageSnapshot}=require('../src/board-image-snapshot.cjs');
@@ -24,8 +25,10 @@ const b=await import(pathToFileURL(r.resolve('@whiskeysockets/baileys')).href);
 const {default:pino}=await import(pathToFileURL(r.resolve('pino')).href);
 const {state:auth,saveCreds}=await b.useMultiFileAuthState(config.sessionPath);
 if(!auth.creds.me?.id||isSecretaryChat(b.jidNormalizedUser(auth.creds.me.id),config))throw Error('A separate paired helper account is required.');
+const helperIdentity={secretaryId:b.jidNormalizedUser(auth.creds.me.id),secretaryLid:auth.creds.me.lid?b.jidNormalizedUser(auth.creds.me.lid):null};
+const target={name:'Test_group',groupId:config.targetGroupId};
 const {version}=await b.fetchLatestBaileysVersion();
-const sock=b.makeWASocket({auth,version,logger:pino({level:'silent'}),syncFullHistory:false,markOnlineOnConnect:false,shouldIgnoreJid:jid=>!isSecretaryChat(jid,config)});
+const sock=b.makeWASocket({auth,version,logger:pino({level:'silent'}),syncFullHistory:false,markOnlineOnConnect:false,shouldIgnoreJid:jid=>!acceptHelperChat(jid,config)});
 let credentials=Promise.resolve(),queue=Promise.resolve(),accepting=false,resolveEnd;
 const finished=new Promise(resolve=>resolveEnd=resolve),ack=createMessageAckTracker(sock.ev,config,30000);
 sock.ev.on('creds.update',()=>{credentials=credentials.then(saveCreds);});
@@ -52,12 +55,31 @@ async function flush(){
 const start=Date.now();
 function enqueue(work){queue=queue.then(work).catch(()=>{accepting=false;status('Private setup paused after an unverified send or processing error.');process.exitCode=1;resolveEnd();});}
 sock.ev.on('connection.update',update=>{
- if(update.connection==='open'){accepting=true;status('Separate helper connected; private setup ready.');enqueue(flush);}
+ if(update.connection==='open'){accepting=true;status('Separate helper connected; private setup ready.');enqueue(async()=>{
+  if(config.enableGroupConnection&&state?.stage==='complete'&&!state.groupLink){
+   try{await connectGroup({state,target,identity:config,helper:helperIdentity,socket:sock,save});status('Exact Test_group membership verified; connection saved.');}
+   catch(error){state.outbox.push({kind:'text',text:error.message});await save();}
+  }
+  await flush();
+ });}
  if(update.connection==='close'){accepting=false;process.exitCode=1;resolveEnd();}
 });
 sock.ev.on('messages.upsert',event=>{
  if(!accepting||event.type!=='notify')return;
- for(const message of event.messages){const command=incoming(message,config,start);if(command)enqueue(async()=>{state=applySetup(state,command);await save();await flush();status(`Private setup stage: ${state.stage}.`);});}
+ for(const message of event.messages){const command=incoming(message,config,start);if(command)enqueue(async()=>{
+  if(/^(CONNECT TEST GROUP|POST TEST BOARD)$/i.test(command.text)&&state){
+   if(!state.seen.includes(command.id)){
+    state.seen.push(command.id);await save();
+    const options={state,target,identity:config,helper:helperIdentity,socket:sock,acknowledgements:ack,save};
+    try{
+     const changed=await (/^CONNECT/i.test(command.text)?connectGroup(options):postGroup(options));
+     if(!changed)state.outbox.push({kind:'text',text:/^CONNECT/i.test(command.text)?'Test_group is already connected. Reply POST TEST BOARD to send the approved board once.':'The board is already posted. No duplicate was sent.'});
+    }catch(error){state.outbox.push({kind:'text',text:error.message});}
+   }
+  }else{state=applySetup(state,command);}
+  await save();await flush();status(`Private setup stage: ${state?.stage||'waiting'}.`);
+ });}
+
 });
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{accepting=false;resolveEnd();});
 await finished;accepting=false;await queue;sock.end(new Error('Setup runner stopped'));await credentials;
