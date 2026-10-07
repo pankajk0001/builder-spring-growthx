@@ -38,3 +38,15 @@ test('authorized short test waits two minutes, posts once and restores normal fu
  assert.equal(await deliverMemberUpdate({...options,now:now+130000}),false);assert.equal(sends,1);
  const later=readMember(event('b','Zara Example: take Listener'),s,target,identity);s=queueMember(s,later,target,identity);s=applyMembers(s,[later],[{messageId:later.id,intent:'take',role:'Listener'}],target,identity);scheduleMemberTest(s,now+130000);assert.equal(s.memberLive.nextAt,'2026-10-07T14:30:00.000Z');
 });
+
+test('formatted and plain withdrawals recognize the trusted test secretary, including alternate phone identity',()=>{
+ const s=ready();
+ for(const text of ['*Noah Example: I can’t make it*','Noah Example: I can’t make it']){
+  for(const patch of [{},{participant:'new-address@lid',participantAlt:identity.secretaryId}]){
+   const m=readMember(event('withdraw',text,patch),s,target,identity);
+   assert.equal(m.sender,'Noah Example');assert.equal(m.text,'I can’t make it');
+  }
+  const outsider=readMember(event('outside',text,{participant:'999@lid',participantAlt:'999@s.whatsapp.net'}),s,target,identity);
+  assert.notEqual(outsider.sender,'Noah Example');
+ }
+});

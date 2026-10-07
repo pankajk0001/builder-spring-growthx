@@ -38,11 +38,17 @@ function groupRoleMessage(event,state,target){
  if(!Number.isFinite(timestamp)||timestamp<state.live.startedAt||timestamp>=state.live.windowEnd)return null;
  let text=event.content?.conversation??event.content?.extendedTextMessage?.text;
  if(typeof text!=='string'||!text.trim()||text.length>5000||text.startsWith('the helper —'))return null;
- const actor=(key.participant||state.secretaryId).replace(/:\d+(?=@)/,'');
+ const normalize=id=>typeof id==='string'?id.replace(/:\d+(?=@)/,''):null;
+ const actor=normalize(key.participant||state.secretaryId);
+ const secretaryActors=[normalize(state.secretaryId),normalize(state.secretaryLid)].filter(Boolean);
+ const trustedSecretary=[actor,normalize(key.participantAlt)].some(id=>id&&secretaryActors.includes(id));
  let sender='Member '+createHash('sha256').update(actor).digest('hex').slice(0,8)+' Example';
  // The paired test phone can act out fictional members; other members cannot impersonate them.
- const pretend=/^([\p{L}\p{N} .'-]{1,80} Example):\s*([\s\S]+)$/u.exec(text.trim());
- if(pretend&&(key.fromMe===true||actor===state.secretaryId||actor===state.secretaryLid)){sender=pretend[1];text=pretend[2];}
+ let aliasText=text.trim();
+ // WhatsApp bold, italic and strike-through can wrap the whole test reply.
+ while(aliasText.length>2&&['*','_','~'].includes(aliasText[0])&&aliasText.at(-1)===aliasText[0])aliasText=aliasText.slice(1,-1).trim();
+ const pretend=/^([\p{L}\p{N} .'-]{1,80} Example):\s*([\s\S]+)$/u.exec(aliasText);
+ if(pretend&&(key.fromMe===true||trustedSecretary)){sender=pretend[1];text=pretend[2];}
  return {id:'fictional-live-'+createHash('sha256').update(key.id+'|'+actor).digest('hex'),sender,text:text.trim(),timestamp};
 }
 function enqueueGroupMessage(state,message){
