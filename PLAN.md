@@ -1,6 +1,13 @@
 # Plan
 
-## Current approved milestone — everyday private Secretary messages
+## Confirmed verification — fresh private setup on a reused test account
+
+- User requested the first-time setup test. No unused WhatsApp number is available; the user explicitly approved temporarily replacing the original test account's saved setup, then restoring its saved club from a private backup. This checks fresh registration/setup on a previously used number, not an unused-number signup.
+- All 33 targeted setup, private-language and club-isolation checks pass. Fresh START registered a new record and delivered the welcome message. Fictional Speaker 1 Ada Finch and Timer Mira Vale produced the acknowledged sample preview; sample approval led through club name, meeting number, usual day/time, one Venue question, weekly reminder and board-update time. Final approved preview and TABLE were delivered privately. All 15 final roles checked: Speaker 1 Ada Finch and Timer Mira Vale filled, thirteen roles open; Cedar Example Club, meeting 42, Sunday 11:00 AM, Cedar Hall Room 2, Monday 19:00 reminder and 20:10 updates match the inputs.
+- Fresh approval, board, venue and schedules survived a real helper restart exactly. The original club was then restored exactly, including all roles, connection, drafts, approvals, schedule and group receipts; both other clubs remained unchanged. The entire registry matched its pre-test backup, and another restart preserved it without duplicate sends. Backups and screenshots remain privately outside the repository. No group connection or first group post was exercised in this repeat.
+- Final restored TABLE delivered and inspected in WhatsApp; every original saved field remains intact, with only this acknowledged table request added to its processed-message history. Both other clubs remain exactly unchanged and the shared helper is active. User confirmed the fresh setup messages and restored table on the phone. Verification is confirmed; unused-number onboarding and a fresh group post were not exercised.
+
+## Confirmed milestone — everyday private Secretary messages
 
 - Approved by the user: translate each verified private Secretary message through the existing Hermes Codex call into one existing command or one role edit; low confidence or ambiguous requests ask one short private question. Keep exact commands/role lines working, group-member processing unchanged, approval gates intact, caps shared, and saved boards preserved.
 - Implemented private translation, strict action validation, automatic entry into the existing correction draft, confirmation before natural-language replacement of an occupied role, stale-confirmation protection and exact-format fallback on AI failure. A request to post at an ambiguous hour asks AM/PM and cannot become immediate approval. The draft still requires its delivered preview and fresh approval before group posting.
