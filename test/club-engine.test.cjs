@@ -120,3 +120,23 @@ test('same-role draft conflict asks privately and requires a fresh delivered pre
  await e.command(command('choose','USE DRAFT'));assert.equal(f.A.state.memberEdit.previewAcknowledged,true);assert.equal(f.A.state.memberEdit.stage,'preview');assert.equal(f.sent.filter(s=>s.jid===tA.groupId).length,0);
  await e.command(command('fresh-approve','APPROVE'));assert.equal(f.A.state.memberEdit,null);assert.equal(f.A.state.memberLive.publishedBoard.find(r=>r.role==='Grammarian').member,'Mira Example');assert.equal(f.sent.filter(s=>s.jid===tA.groupId&&s.png).length,1);
 });
+test('analytics separates verified Secretary commands from member requests and acknowledged boards across restart',async()=>{
+ const {summarizeActivity}=require('../src/admin-activity.cjs');
+ const f=fixture();let clock=now;let e=f.create(f.A,{now:()=>clock});
+ await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));
+ let summary=summarizeActivity(f.A,clock);assert.equal(summary.secretaryMessages,2);assert.equal(summary.boardsPosted,1);assert.equal(summary.boardsApproved,0);
+ await e.group(groupMessage(tA,a,'member-only','Noah Example: take Grammarian'));
+ clock+=2000;await e.tick();summary=summarizeActivity(f.A,clock);
+ assert.equal(summary.secretaryMessages,2);assert.equal(summary.memberReplies,1);assert.equal(summary.roleUpdates,1);
+ f.A.state=structuredClone(f.A.state);f.A.activity=structuredClone(f.A.activity);e=f.create(f.A,{now:()=>clock});
+ await e.command(command('post','POST TEST BOARD'));await e.group(groupMessage(tA,a,'member-only','Noah Example: take Grammarian'));await e.tick();
+ summary=summarizeActivity(f.A,clock);assert.equal(summary.secretaryMessages,2);assert.equal(summary.memberReplies,1);assert.equal(summary.boardsPosted,1);
+ assert.equal(summarizeActivity(f.B,clock),null);
+});
+test('two confirmed role changes count separately even when the final board returns to its original state',async()=>{
+ const {summarizeActivity}=require('../src/admin-activity.cjs');const f=fixture();let clock=now;
+ const e=f.create(f.A,{now:()=>clock,interpret:async(_board,messages)=>({decisions:messages.map(m=>({messageId:m.id,intent:m.text.includes('drop')?'drop':'take',role:'Grammarian'}))})});
+ await e.command(command('connect-net','CONNECT TEST GROUP'));await e.command(command('post-net','POST TEST BOARD'));
+ await e.group(groupMessage(tA,a,'take-net','Noah Example: take Grammarian'));await e.group(groupMessage(tA,a,'drop-net','Noah Example: drop Grammarian'));clock+=2000;await e.tick();
+ const summary=summarizeActivity(f.A,clock);assert.equal(summary.memberReplies,2);assert.equal(summary.roleUpdates,2);assert.equal(summary.boardsPosted,1);assert.equal(f.A.state.memberLive.dirty,false);
+});

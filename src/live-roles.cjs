@@ -73,7 +73,7 @@ function enqueueGroupMessage(state,message){
  }
  return {...state,live:{...live,seen:[...live.seen,message.id],inbox:[...live.inbox,message]}};
 }
-function applyLiveBatch(state,messages,decisions){
+function applyLiveBatch(state,messages,decisions,onRoleChange=()=>{}){
  const live=state.live;
  if(!live||state.status!=='approved'||state.editSession)throw Error('Member updates are paused while the Secretary edits or approves a board.');
  if(messages.length>10||!messages.length||!isDeepStrictEqual(messages,live.inbox.slice(0,messages.length)))throw Error('The saved member batch changed.');
@@ -104,7 +104,7 @@ function applyLiveBatch(state,messages,decisions){
   }
   const result=respondToRoles(board,[message],[decision]);
   for(const note of result.notes)if(note.kind==='clarify')notes.push(state.pilotMode?`I need your help with ${source.sender}’s reply.\nMessage: ${source.text}\nNo role changed. Please use EDIT to confirm the correction.`:note.text+'\nMessage: '+source.text);
-  if(!isDeepStrictEqual(board,result.board)){board=result.board;
+  if(!isDeepStrictEqual(board,result.board)){onRoleChange();board=result.board;
    if(source.actorKey&&decision.intent==='take'){const changed=board.find(row=>row.role===decision.role);changed.memberId=source.actorKey;changed.memberIds=source.actorKeys||[source.actorKey];}
    if(source.actorKey&&decision.intent==='drop'){const changed=board.find(row=>row.role===decision.role);delete changed.memberId;delete changed.memberIds;}
    changedAt=source.timestamp;}

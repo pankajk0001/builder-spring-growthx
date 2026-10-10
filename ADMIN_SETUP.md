@@ -36,3 +36,9 @@ No admin account changes are included in milestone 20. No pause/reset/restore/tr
 ## Publishing login discovery
 
 `npm run deploy` runs `scripts/publish-auth-discovery.mjs` afterwards. This replaces only the public root `/.well-known/openid-configuration` asset with JSON content type. The hosting uploader treats extensionless files as binary; without this correction, production sign-in fails with `AuthProviderDiscoveryFailed`. No routing or signing keys are changed by this step.
+
+## Activity tracking
+
+The helper stores bounded structured activity alongside each private club record. Tracking begins at installation; existing posts and chats are not counted retrospectively. Only verified incoming private messages count toward active Secretaries. Role requests, applied changes, new approvals and acknowledged board posts count toward club activity separately. Snapshot uploads omit event records, message IDs, actor hashes and chat bodies. Current Secretary identity determines Secretary activity; club history remains with the club.
+
+The shared service heartbeat updates through the same helper work queue. Checks older than a minute are labelled delayed. The sync timer reads the shared AI safeguard ledger without changing its call or budget limits. Missing ledger data is unavailable, rather than zero.

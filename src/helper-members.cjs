@@ -23,7 +23,7 @@ function readMember(event,s,target,identity){
 }
 function merge(s,projected){return {...s,memberLive:projected.live,outbox:[...(s.outbox||[]),...(projected.outbox||[])]};}
 function queueMember(s,message,target,identity){return merge(s,enqueueGroupMessage(memberProjection(s,target,identity),message));}
-function applyMembers(s,messages,decisions,target,identity){return merge(s,applyLiveBatch(memberProjection(s,target,identity),messages,decisions));}
+function applyMembers(s,messages,decisions,target,identity,onRoleChange){return merge(s,applyLiveBatch(memberProjection(s,target,identity),messages,decisions,onRoleChange));}
 async function deliverMemberUpdate({state,target,identity,helper,socket,acknowledgements,save,now=Date.now(),sendImage=sendHelperTestGroupBoard}){
  const decision=memberDecision(state,target,identity,now);
  if(decision!=='send'){if(decision==='uncertain')throw Error('An earlier updated-board send is uncertain. Check the group; it will not be resent automatically.');return false;}

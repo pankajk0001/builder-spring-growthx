@@ -16,6 +16,9 @@ const config=JSON.parse(await readFile(join(dir,'helper-account.json'),'utf8'));
 require('../src/test-group.cjs').assertRunnerHome(config,homedir());
 const store=await loadClubStore(join(dir,'multi-club-state.json'),config,join(dir,'secretary-setup-state.json'));
 const {registry,save}=store;
+const {ensureActivity,recordActivity}=require('../src/admin-activity.cjs');
+for(const club of registry.clubs)ensureActivity(club,Date.now());
+registry.serviceHealth={connected:false,lastCheckAt:Date.now(),startedAt:Date.now()};await save();
 const status=text=>process.stdout.write(text+'\n');console.log=console.info=console.warn=()=>{};
 const bridge=join(homedir(),'.hermes','hermes-agent','scripts','whatsapp-bridge'),r=createRequire(join(bridge,'package.json'));
 const b=await import(pathToFileURL(r.resolve('@whiskeysockets/baileys')).href);
@@ -41,7 +44,7 @@ function enqueue(club,work){
   if(club?.paused)return;
   try{await work();}
   catch(error){
-   if(club){club.paused={reason:'Unverified delivery or processing error; inspect this club before recovery.',at:new Date().toISOString()};await save();status('One club paused; other clubs remain active.');}
+   if(club){recordActivity(club,'delivery_failure','runner|'+Date.now(),Date.now(),Date.now());club.paused={reason:'Unverified delivery or processing error; inspect this club before recovery.',at:new Date().toISOString()};await save();status('One club paused; other clubs remain active.');}
    else{status('Private message could not be verified; no club was changed.');}
   }
  }).catch(()=>{accepting=false;process.exitCode=1;resolveEnd();status('Club storage could not be saved; helper stopped.');});
@@ -74,21 +77,23 @@ sock.ev.on('messages.upsert',event=>{
   const timestamp=Number(message.messageTimestamp)*1000;
   if(event.type!=='notify'||message.key?.fromMe!==false||!message.key.id||!Number.isFinite(timestamp)||timestamp<start)continue;
   enqueue(null,async()=>{
-   const club=await resolveSecretary(message);if(!club||club.paused)return;
+   const club=await resolveSecretary(message);if(!club)return;
+   if(recordActivity(club,'secretary_message',message.key.id,timestamp,Date.now()))await save();
+   if(club.paused)return;
    const command=incoming(message,club.identity,start);if(!command)return;
    // Keep all club work in the same serial queue; failures pause only its owner.
    try{await engine(club).command(command);}
-   catch(error){club.paused={reason:'Unverified private delivery; inspect this club before recovery.',at:new Date().toISOString()};await save();status('One club paused; other clubs remain active.');}
+   catch(error){recordActivity(club,'delivery_failure','private|'+command.id,Date.now(),Date.now());club.paused={reason:'Unverified private delivery; inspect this club before recovery.',at:new Date().toISOString()};await save();status('One club paused; other clubs remain active.');}
   });
  }
 });
 sock.ev.on('connection.update',update=>{
  if(update.connection==='open'){
-  accepting=true;status('Shared helper connected; isolated clubs ready.');
+  accepting=true;enqueue(null,async()=>{registry.serviceHealth.connected=true;registry.serviceHealth.lastCheckAt=Date.now();await save();});status('Shared helper connected; isolated clubs ready.');
   for(const club of registry.clubs)enqueue(club,()=>engine(club).tick());
-  clearInterval(timer);timer=setInterval(()=>{for(const club of registry.clubs)enqueue(club,()=>engine(club).tick());},15000);
+  clearInterval(timer);timer=setInterval(()=>{enqueue(null,async()=>{registry.serviceHealth.lastCheckAt=Date.now();await save();});for(const club of registry.clubs)enqueue(club,()=>engine(club).tick());},15000);
  }
- if(update.connection==='close'){accepting=false;process.exitCode=1;resolveEnd();}
+ if(update.connection==='close'){accepting=false;enqueue(null,async()=>{registry.serviceHealth.connected=false;registry.serviceHealth.lastCheckAt=Date.now();await save();});process.exitCode=1;resolveEnd();}
 });
-for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{accepting=false;clearInterval(timer);resolveEnd();});
+for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{accepting=false;clearInterval(timer);enqueue(null,async()=>{registry.serviceHealth.connected=false;registry.serviceHealth.lastCheckAt=Date.now();await save();});resolveEnd();});
 await finished;accepting=false;clearInterval(timer);await queue;sock.end(new Error('Shared helper stopped'));await credentials;

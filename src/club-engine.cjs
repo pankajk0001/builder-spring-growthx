@@ -12,8 +12,12 @@ const {assertPrivateSendReceipt}=require('./note-delivery.cjs');
 const {queueClubReminder}=require('./club-reminders.cjs');
 const {translateSecretary,replacementQuestion}=require('./secretary-language.cjs');
 const {begin}=require('./secretary-setup.cjs');
-function createClubEngine({registry,club,socket,helper,acknowledgements,save,interpret,interpretSecretary,now=Date.now,status=()=>{},sendPreview=sendPrivateBoardPreview,sendImage,enableMembers=true,pilotMode=false}){
+const {ensureActivity,recordActivity,activityMarkers,observeActivity}=require('./admin-activity.cjs');
+function createClubEngine({registry,club,socket,helper,acknowledgements,save:persist,interpret,interpretSecretary,now=Date.now,status=()=>{},sendPreview=sendPrivateBoardPreview,sendImage,enableMembers=true,pilotMode=false}){
  const identity=club.identity;
+ ensureActivity(club,now());let markers=activityMarkers(club);
+ async function save(){markers=observeActivity(club,markers,now());await persist();}
+ const failedDelivery=key=>recordActivity(club,'delivery_failure',key,now(),now());
  const options=()=>({state:club.state,target:club.target,identity,helper,socket,acknowledgements,save,now:now(),...(sendImage?{sendImage}:{})});
  async function flush(){
   const state=club.state;
@@ -58,9 +62,10 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
  async function deliverCorrection(){
   if(club.state?.memberEdit?.stage!=='post_ready'||!club.target)return;
   try{await deliverHelperCorrection(options());await flush();}
-  catch(error){const s=club.state;if(!s.memberEdit.deliveryErrorNotified){s.memberEdit.deliveryErrorNotified=true;s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
+  catch(error){const s=club.state;if(!s.memberEdit.deliveryErrorNotified){s.memberEdit.deliveryErrorNotified=true;failedDelivery('correction|'+s.memberEdit.boardHash+'|'+now());s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
  }
  async function command(command){
+  if(!club.state?.seen.includes(command.id)&&recordActivity(club,'secretary_message',command.id,now(),now()))await save();
   await processMembers();
   let s=club.state;
   if(pilotMode&&s){s.pilotMode=true;s.chatVersion=2;}if(s?.seen.includes(command.id))return;
@@ -93,7 +98,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
     if(!connect&&!club.target)throw Error('Connect your test group before posting.');
     const changed=connect?await selectGroup(connect[1]):await postGroup(options());
     if(!changed)s.outbox.push({kind:'text',text:s.pilotMode?(connect?'Your group is already connected. Send POST BOARD to confirm the first post.':'Your approved board is already posted. TABLE · EDIT · HELP'):connect?'Your test group is already connected. Reply POST TEST BOARD to post the approved board once.':'The board is already posted. No duplicate was sent.'});
-   }catch(error){s.outbox.push({kind:'text',text:error.message});}
+   }catch(error){if(s.helperGroupPost?.status==='sending')failedDelivery('initial|'+command.id);s.outbox.push({kind:'text',text:error.message});}
   }else club.state=applySetup(s,command,now(),{pilotMode});
   if(club.state?.stage==='complete'&&!club.target&&!club.state.groupHelpSent){club.state.groupHelpSent=true;club.state.outbox.push({kind:'text',text:club.state.pilotMode?'Add the helper to your club group, then send CONNECT GROUP followed by its name. You can connect one group for your club.':'Add the helper to your test group, then send CONNECT TEST GROUP followed by its name. Each Secretary can connect one club group.'});}
   if(followup&&club.state.memberEdit?.stage==='preview'&&!club.state.memberEdit.pendingEdits){const next=replacementQuestion(club.state,followup.replacements,followup.questionAfter);if(next.pending)club.state.secretaryQuestion=next.pending;if(next.question)club.state.outbox.push({kind:'text',text:next.question});}
@@ -109,7 +114,11 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
   if(s?.memberEdit?.send||s?.memberEdit?.stage==='post_ready'||!s?.groupLink?.connected||!live?.inbox.length||live.retryAt>now())return;
   try{
    if(!live.pendingBatch){const messages=live.inbox.slice(0,10),result=await interpret(live.board,messages,'availability',{pilotAuthorized:s.pilotMode===true});live.pendingBatch={messages,decisions:result.decisions};await save();}
-   club.state=applyMembers(s,live.pendingBatch.messages,live.pendingBatch.decisions,club.target,identity);scheduleMemberTest(club.state,now());await save();await flush();status('Club member batch processed.');
+   const batch=live.pendingBatch;let changes=0;
+   club.state=applyMembers(s,batch.messages,batch.decisions,club.target,identity,()=>changes++);
+   for(let i=0;i<batch.messages.length;i++)if(batch.decisions[i].intent!=='ignore')recordActivity(club,'member_reply',batch.messages[i].id,batch.messages[i].timestamp,now());
+   if(changes)recordActivity(club,'role_update',batch.messages.map(m=>m.id).join('|'),now(),now(),changes);
+   scheduleMemberTest(club.state,now());await save();await flush();status('Club member batch processed.');
   }catch{
    s=club.state;s.memberLive.retryAt=now()+180000;
    if(!s.memberLive.failureNotified){s.memberLive.failureNotified=true;s.outbox.push({kind:'text',text:'[ask the secretary to try again in few minutes]'});}
@@ -128,7 +137,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
   }
   if(club.state?.memberLive&&club.state.groupLink?.connected){
    try{if(await deliverMemberUpdate({...options(),now:now()})){await flush();status('Changed club board delivered.');}}
-   catch(error){const s=club.state;if(!s.memberDeliveryFailureNotified){s.memberDeliveryFailureNotified=true;s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
+   catch(error){const s=club.state;if(!s.memberDeliveryFailureNotified){s.memberDeliveryFailureNotified=true;failedDelivery('member|'+s.memberLive.nextAt+'|'+now());s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
   }
  }
  return {command,group,tick,flush};
