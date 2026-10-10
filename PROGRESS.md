@@ -61,3 +61,5 @@
 2026-10-11 — User phone-confirmed the explicitly requested immediate private draft reminder and matching preview. Both sends acknowledged, all 15 draft roles checked, no group post and normal timing preserved. Normal one-hour reminder timing and scheduled posting with an open draft remain pending.
 
 2026-10-11 — User phone-confirmed immediate changed-board posting with an open private draft. Exact image and group acknowledgement verified for all 15 roles (three filled, twelve open); unapproved draft holder excluded, draft preserved, test consumed and normal 20:00 schedule retained. Private reminder delivery is also phone-confirmed; normal one-hour timing remains pending.
+
+2026-10-11 — Owner approved V1 admin scope and build plan: owner-only Google access, boards/activity without conversations, seven-day Secretary activity separate from club activity, pause both posting/replies, backup/reset/restore with fresh approval, and owner-approved Secretary handover confirmed by the incoming WhatsApp account. Saved ADMIN_SCOPE.md and milestones 20–24; planning only, nothing new deployed. Normal one-hour draft-reminder timing remains pending.

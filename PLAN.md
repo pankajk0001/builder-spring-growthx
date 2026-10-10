@@ -335,3 +335,39 @@ Build one milestone at a time, in the order listed in PRODUCT.md. Milestone 1 ap
 - User phone-confirmed the fresh START → TABLE → two assignments → APPROVE → exact group image flow. Every visible role checked: Speaker 1 and Timer filled, thirteen open; group image matches the approved private preview and the draft is closed. This confirms fresh-board and batch-edit prerequisites; the one-hour reminder and scheduled posting with an open EDIT draft still await their manual timing check.
 - User requested and phone-confirmed an immediate private draft-reminder test. Existing helper acknowledged the reminder and exact matching preview; all 15 draft roles checked, group receipt unchanged, and regular reminder/posting settings preserved. This verifies private delivery on demand, not the normal one-hour timing or scheduled group posting with an open draft.
 - User phone-confirmed the explicitly authorized immediate changed-board group test with an open unapproved draft. Existing delivery checks sent one acknowledged image matching all 15 current member-board roles: three filled, twelve open. The conflicting unapproved draft holder stayed private, draft remained open, short test was consumed, and normal 20:00 posting time stayed intact. This verifies open-draft delivery on demand; exact one-hour reminder timing remains unverified in the normal daily cycle.
+
+
+## Approved next product scope — owner admin panel
+
+Full agreed scope: ADMIN_SCOPE.md. User approved saving this scope and build plan; no admin implementation or production changes are authorized by this planning checkpoint alone. Keep the outstanding normal one-hour reminder timing check separate. Build one milestone at a time after the user approves implementation.
+
+### Milestone 20 — owner login and read-only account overview
+
+- Google sign-in restricted to the privately configured owner; every data request protected on the server. No public account data or browser-held helper key.
+- Read-only connection from the existing helper server; list/search current Secretaries and clubs, setup/paused states, approved/live/draft boards, settings and recent saved delivery records. Show freshness and missing historical data honestly.
+- Acceptance: owner can inspect test accounts in the real web panel; another Google account and unauthenticated direct requests are rejected; WhatsApp boards, schedules and sends remain unchanged.
+
+### Milestone 21 — activity tracking, basic analytics and service health
+
+- Track verified Secretary messages separately from member/club activity; rolling seven-day active Secretary count, setup completion, board events and failures. Preserve club history across future Secretary changes.
+- Show WhatsApp/service health and shared AI limits. Record admin action results; collect structured events without raw chat bodies. Historical tracking starts when installed.
+- Acceptance: fictional event examples produce correct distinct counts/time windows, failed versus successful sends are separated, restart does not duplicate events, and unavailable or stale data is clearly labelled.
+
+### Milestone 22 — pause and resume one account
+
+- Owner confirms club-specific pause/resume; pause stops posting and processing replies, preserves account data and leaves other clubs running. Resume respects approval and delivery blockers and does not replay paused-period replies.
+- Acceptance: test-group member messages and timers cannot change/send the paused club; another club continues; resume and audit history survive restart.
+
+### Milestone 23 — reset with backup and restore
+
+- Confirm selected account; save a verified private backup; restart setup without unsolicited DM. Allow Secretary START while reset-paused, and resume automatic work only after fresh preview/approval and group checks.
+- Restore board/settings with approval required; do not replay queues/posts or restore revoked ownership. Reject operations during unresolved sends and preserve account on backup failure.
+- Acceptance: complete reset → manual START → setup → fresh approval in a test group, then test recoverable restore and fresh approval; inspect every role and image; verify other clubs untouched.
+
+### Milestone 24 — Secretary handover
+
+- Owner-initiated transfer or current Secretary's private request; all Secretary requests require owner approval. Incoming Secretary sends START and confirms the intended club before ownership changes.
+- Keep outgoing access until completion; preserve approved/live board, settings, history and normal schedule. Archive drafts, revoke old management access, reroute private messages and invalidate old approval/confirmation commands on completion.
+- Acceptance: current → owner → incoming flow works across two test accounts; wrong/already-assigned identities cannot accept; cancellation and restart preserve correct ownership; old Secretary cannot manage the club; all roles/settings/group receipts remain intact.
+
+Planning checkpoint only: no new admin login, dashboard or handover feature is live yet. Owner email and Google app credentials will be configured privately when milestone 20 starts. Admin web checks are explicitly in scope alongside test-group checks of WhatsApp effects.
