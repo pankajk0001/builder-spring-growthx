@@ -82,6 +82,12 @@ After verified group delivery, the helper privately confirms the post to the Sec
 
 ### Editing a posted board (milestone 6)
 
+After setup is complete, send START privately to prepare a fresh meeting draft. All visible roles start open, account ownership is cleared, the date uses the next usual meeting day, and a numeric meeting number advances once. Club, venue, meeting time, reminder, posting time and connected group stay saved. TABLE shows the draft and its preview; add pre-filled roles, then approve the latest delivered preview. The previous approved board remains in place until approval. CANCEL discards only the fresh draft. START with an existing draft keeps its edits and asks you to review or cancel it. After a new meeting is posted, old queued messages and send history stay archived privately and the new listening cycle starts fresh.
+
+The shared hosted helper keeps confirmed member updates running while a Secretary correction draft is open. Only the approved board plus confirmed member changes can reach the scheduled group post; unchanged boards do not repeat. One hour before each saved daily posting time, an open draft gets one private reminder and matching preview, with APPROVE, EDIT and CANCEL. Reminders end with the approved meeting's posting cycle and survive restart without repeating.
+
+Draft previews include newer changes to untouched roles. When both the draft and members changed a role, the helper asks the Secretary privately to reply KEEP CURRENT or USE DRAFT, one role at a time. It then sends a fresh preview which still needs APPROVE. Another conflicting member change requires a new choice. Unchecked member replies prevent immediate draft delivery until they have been processed. Approved corrections still post immediately. This behavior is implemented locally; live WhatsApp verification is pending.
+
 Run `npm run test:whatsapp:edit` to listen in Secretary self-chat for 15 minutes; rerun to resume saved state. Reply EDIT, send corrections together, then check the corrected private preview. APPROVE posts that exact image immediately to Test_group and sends a private delivery confirmation. CANCEL restores the original published board. Invalid lines are quoted and valid lines retained for retry; no group image is sent while corrections are pending. The laptop must remain awake and connected.
 
 Role corrections accept the common Listner spelling for Listener and explicit sentences such as “Timer is taken by Zara Example and Listener is taken by Finn Example.” Uncertain or negated assignments require clarification.
@@ -133,3 +139,5 @@ Public page: https://neat-hound-892.convex.site
 `npm run build` builds only the public files from `web/` and the licensed Inter font into `dist/`. `npm run deploy` builds and publishes them to the existing Convex static-hosting component. No helper session, phone number, private state, or environment file is included. `npm start` remains the WhatsApp runner.
 
 The page uses fictional examples and explains current pilot availability. It has no login, signup, analytics, payment, or connection to WhatsApp messages.
+
+Secretary messages can contain several clear assignments, such as “set Speaker 1 to Ada Example and Timer to Mira Example”. The helper updates the private draft together, sends one summary and matching preview, and waits for approval. Occupied-role replacements need separate private confirmation.

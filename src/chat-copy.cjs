@@ -9,7 +9,7 @@ function help(s){
  if(s.setupPaused)return 'Your setup is paused and saved. Send START to continue.';
  if(['sample','final'].includes(s.stage))return `Check the latest preview. APPROVE continues, EDIT makes corrections, TABLE shows the roles, and CANCEL pauses setup.\n\n${choices}`;
  if(s.stage!=='complete')return `${setupQuestion(s)}\n\nCANCEL pauses setup. START resumes your saved answers.`;
- return 'TABLE — view current roles\nEDIT — change roles or Venue, then approve the new preview\nCONNECT GROUP Group name — connect your club group\nPOST BOARD — confirm the first approved board post\n\nMember replies update your board at your saved posting time. Unclear requests come here privately.';
+ return 'START — prepare a fresh meeting board with all roles open\nTABLE — view current roles\nEDIT — change roles or Venue, then approve the new preview\nCONNECT GROUP Group name — connect your club group\nPOST BOARD — confirm the first approved board post\n\nMember replies update your board at your saved posting time. Unclear requests come here privately.';
 }
 function editInstructions(s){return 'Current role board\n'+renderTable(s.memberLive?.board||s.board)+`\n\nVenue: ${s.meeting.venue||'Not set'}\nSend corrections, for example Timer: Mira Vale or Venue: Cedar Hall.\nI’ll show a new preview before changing the group board.\n\n${choices}`;}
 module.exports={choices,setupQuestion,settings,status,help,editInstructions};

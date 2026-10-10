@@ -42,7 +42,10 @@ function applySetup(state,command,now=Date.now(),options={}){
   if(/^EDIT$/i.test(text)&&['sample','final'].includes(s.stage)){s.setupEditing=true;s.lastPreviewServerAckVerified=false;s.outbox.push({kind:'text',text:copy.editInstructions(s)});return s;}
  }
  if(/^TABLE$/i.test(text)){s.outbox.push({kind:'text',text:renderTable(s.memberLive?.board||s.board)+(s.pilotMode?`\nVenue: ${s.meeting.venue||'Not set'}`:'')});if(s.pilotMode&&['sample','final'].includes(s.stage))preview(s,s.stage);return s;}
- if(s.stage==='complete'){s.outbox.push({kind:'text',text:s.pilotMode?copy.status(s):s.groupLink?.connected?`Your group is connected. Reply TABLE to view roles or EDIT to make corrections.`:'Your private setup is saved. Group connection is the next step; no group posts are enabled.'});return s;}
+ if(s.stage==='complete'){
+  if(/^START$/i.test(text))return require('./helper-new-board.cjs').startFreshBoard(s,now);
+  s.outbox.push({kind:'text',text:s.pilotMode?copy.status(s):s.groupLink?.connected?`Your group is connected. Reply TABLE to view roles or EDIT to make corrections.`:'Your private setup is saved. Group connection is the next step; no group posts are enabled.'});return s;
+ }
  if(['sample','final'].includes(s.stage)){
   if(isApproval(text)){
    const pending=s.pendingEdits;

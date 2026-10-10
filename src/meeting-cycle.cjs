@@ -34,4 +34,4 @@ function nextMeetingDate(day,after){
  const date=new Date(Date.UTC(local.getUTCFullYear(),local.getUTCMonth(),local.getUTCDate()+ahead));
  return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
-module.exports={DAYS,parseMeetingDay,parseMeetingTime,timeMinutes,meetingCutoff,nextMeetingDate};
+module.exports={DAYS,parseMeetingDay,parseMeetingTime,timeMinutes,meetingDateStart,meetingCutoff,nextMeetingDate};

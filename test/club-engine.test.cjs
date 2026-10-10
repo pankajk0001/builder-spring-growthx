@@ -79,15 +79,44 @@ test('each club waits for its own saved posting time and sends only its changed 
  f.sent.length=0;clock=Date.parse('2026-10-07T14:30:00Z');await eA.tick();await eB.tick();assert.deepEqual(f.sent.filter(s=>s.png).map(s=>s.jid),[tA.groupId]);
  clock=Date.parse('2026-10-07T14:40:00Z');await eA.tick();await eB.tick();assert.deepEqual(f.sent.filter(s=>s.png).map(s=>s.jid),[tA.groupId,tB.groupId]);await eA.tick();await eB.tick();assert.equal(f.sent.filter(s=>s.png).length,2);
 });
-test('START from the pilot link resumes an existing Secretary without resetting or duplicating their club',async()=>{
+test('START prepares a fresh private draft without resetting the approved board or duplicating the club',async()=>{
  const f=fixture(),e=f.create(f.A);await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));
  const before=structuredClone(f.A.state),count=f.registry.clubs.length;f.sent.length=0;await e.command(command('join-again','START'));
  assert.equal(f.registry.clubs.length,count);assert.deepEqual(f.A.state.board,before.board);assert.deepEqual(f.A.state.meeting,before.meeting);assert.deepEqual(f.A.state.groupLink,before.groupLink);assert.deepEqual(f.A.state.helperGroupPost,before.helperGroupPost);assert.deepEqual(f.A.state.memberLive,before.memberLive);
- assert.equal(f.sent.length,1);assert.equal(f.sent[0].jid,a.secretaryId);assert.match(f.sent[0].content.text,/TABLE.*EDIT/);
+ assert.equal(f.sent.length,2);assert.ok(f.sent.every(s=>s.jid===a.secretaryId));assert.ok(f.sent.some(s=>s.png));assert.equal(f.A.state.memberEdit.kind,'new_meeting');assert.ok(f.A.state.memberEdit.board.every(r=>r.member===null));assert.equal(f.A.state.memberEdit.previewAcknowledged,true);
 });
 test('real pilot completes venue setup and explicit group posting with natural commands on its own group',async()=>{
  const f=fixture();f.B.state=null;f.B.target=null;const e=f.create(f.B,{pilotMode:true});let id=0;const send=text=>e.command(command('real-'+(++id),text));
  for(const text of ['START','Speaker 1: Zara Finch','APPROVE','Cedar Speakers Club','42','Sunday','11:00 AM','Cedar Hall','Monday 19:00','8:10 PM','APPROVE'])await send(text);
  assert.equal(f.B.state.stage,'complete');assert.equal(f.B.state.meeting.venue,'Cedar Hall');await send('CONNECT GROUP Example B');assert.equal(f.B.target.pilotMode,true);assert.equal(f.B.target.secretaryId,b.secretaryId);await send('POST BOARD');assert.equal(f.B.state.helperGroupPost.status,'sent');assert.equal(f.B.state.outbox.length,0);
  assert.ok(f.sent.some(s=>s.jid===tB.groupId&&s.png));assert.equal(f.A.state.meeting.venue,undefined);
+});
+test('open draft gets a private preview one hour before posting; only member changes reach the group',async()=>{
+ const f=fixture();let clock=now;const e=f.create(f.A,{now:()=>clock});
+ await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));
+ await e.command(command('edit','EDIT'));await e.command(command('draft','Timer: Mira Example'));
+ await e.group(groupMessage(tA,a,'claim','Noah Example: take Grammarian'));await e.tick();
+ assert.equal(f.A.state.memberLive.board.find(r=>r.role==='Grammarian').member,'Noah Example');
+ const other=JSON.stringify(f.B);f.sent.length=0;
+ clock=Date.parse('2026-10-07T13:29:59Z');await e.tick();assert.equal(f.sent.length,0);
+ clock=Date.parse('2026-10-07T13:30:00Z');await e.tick();
+ assert.ok(f.sent.some(s=>s.content?.text.includes('unfinished draft')));assert.ok(f.sent.some(s=>s.png));assert.ok(f.sent.every(s=>s.jid===a.secretaryId));
+ assert.equal(f.A.state.memberEdit.board.find(r=>r.role==='Grammarian').member,'Noah Example');
+ const count=f.sent.length;f.A.state=JSON.parse(JSON.stringify(f.A.state));await f.create(f.A,{now:()=>clock}).tick();assert.equal(f.sent.length,count);
+ clock=Date.parse('2026-10-07T14:30:00Z');await e.tick();
+ const images=f.sent.filter(s=>s.jid===tA.groupId&&s.png);assert.equal(images.length,1);
+ const live=f.A.state.memberLive;assert.equal(live.publishedBoard.find(r=>r.role==='Timer').member,null);assert.equal(live.publishedBoard.find(r=>r.role==='Grammarian').member,'Noah Example');
+ assert.equal(hash(images[0].png),hash(renderBoardImage({board:live.publishedBoard,meeting:f.A.state.meeting}).png));
+ assert.equal(f.A.state.memberEdit.board.find(r=>r.role==='Timer').member,'Mira Example');await e.tick();assert.equal(f.sent.filter(s=>s.jid===tA.groupId&&s.png).length,1);assert.equal(JSON.stringify(f.B),other);
+});
+test('an unchanged board still reminds about its draft without repeating a group image',async()=>{
+ const f=fixture();let clock=now;const e=f.create(f.A,{now:()=>clock});await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));await e.command(command('edit','EDIT'));f.sent.length=0;
+ clock=Date.parse('2026-10-07T13:30:00Z');await e.tick();assert.ok(f.sent.some(s=>s.png&&s.jid===a.secretaryId));clock=Date.parse('2026-10-07T14:30:00Z');await e.tick();assert.equal(f.sent.filter(s=>s.jid===tA.groupId).length,0);
+});
+test('same-role draft conflict asks privately and requires a fresh delivered preview after choosing',async()=>{
+ const f=fixture();let clock=now;const e=f.create(f.A,{now:()=>clock});await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));await e.command(command('edit','EDIT'));await e.command(command('draft','Grammarian: Mira Example'));
+ await e.group(groupMessage(tA,a,'claim','Noah Example: take Grammarian'));f.sent.length=0;await e.command(command('approve','APPROVE'));
+ assert.equal(f.A.state.memberLive.board.find(r=>r.role==='Grammarian').member,'Noah Example');assert.match(f.sent.at(-1).content.text,/KEEP CURRENT/);assert.ok(f.sent.every(s=>s.jid===a.secretaryId));
+ await e.command(command('choose','USE DRAFT'));assert.equal(f.A.state.memberEdit.previewAcknowledged,true);assert.equal(f.A.state.memberEdit.stage,'preview');assert.equal(f.sent.filter(s=>s.jid===tA.groupId).length,0);
+ await e.command(command('fresh-approve','APPROVE'));assert.equal(f.A.state.memberEdit,null);assert.equal(f.A.state.memberLive.publishedBoard.find(r=>r.role==='Grammarian').member,'Mira Example');assert.equal(f.sent.filter(s=>s.jid===tA.groupId&&s.png).length,1);
 });

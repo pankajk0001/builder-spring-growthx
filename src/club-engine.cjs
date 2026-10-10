@@ -1,6 +1,7 @@
 const {createHash}=require('node:crypto');
 const {applySetup}=require('./secretary-setup.cjs');
-const {handleHelperEdit,deliverHelperCorrection}=require('./helper-edit.cjs');
+const {handleHelperEdit,deliverHelperCorrection,queueDraftPreview}=require('./helper-edit.cjs');
+const {syncDraft,conflictQuestion,draftReminderDue}=require('./draft-sync.cjs');
 const {activateMembers,readMember,queueMember,applyMembers,deliverMemberUpdate,scheduleMemberTest,syncMemberSchedule}=require('./helper-members.cjs');
 const {approvedImage,checkGroup,connectGroup,postGroup}=require('./helper-group-connection.cjs');
 const {bindTarget}=require('./multi-club.cjs');
@@ -9,11 +10,11 @@ const {captureImageSnapshot}=require('./board-image-snapshot.cjs');
 const {sendPrivateBoardPreview}=require('./preview-delivery.cjs');
 const {assertPrivateSendReceipt}=require('./note-delivery.cjs');
 const {queueClubReminder}=require('./club-reminders.cjs');
-const {translateSecretary}=require('./secretary-language.cjs');
+const {translateSecretary,replacementQuestion}=require('./secretary-language.cjs');
 const {begin}=require('./secretary-setup.cjs');
 function createClubEngine({registry,club,socket,helper,acknowledgements,save,interpret,interpretSecretary,now=Date.now,status=()=>{},sendPreview=sendPrivateBoardPreview,sendImage,enableMembers=true,pilotMode=false}){
  const identity=club.identity;
- const options=()=>({state:club.state,target:club.target,identity,helper,socket,acknowledgements,save,...(sendImage?{sendImage}:{})});
+ const options=()=>({state:club.state,target:club.target,identity,helper,socket,acknowledgements,save,now:now(),...(sendImage?{sendImage}:{})});
  async function flush(){
   const state=club.state;
   while(state?.outbox.length){
@@ -60,8 +61,10 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
   catch(error){const s=club.state;if(!s.memberEdit.deliveryErrorNotified){s.memberEdit.deliveryErrorNotified=true;s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
  }
  async function command(command){
+  await processMembers();
   let s=club.state;
   if(pilotMode&&s){s.pilotMode=true;s.chatVersion=2;}if(s?.seen.includes(command.id))return;
+  let followup;
   if(interpretSecretary){
    const translated=await translateSecretary(s,command,interpretSecretary);
    if(s)delete s.secretaryQuestion;
@@ -72,12 +75,13 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
    }
    if(translated.edit&&!s)club.state=s=begin(now(),{pilotMode});
    if(translated.edit&&s?.stage==='complete'&&!s.memberEdit){
-    club.state=handleHelperEdit(s,{...command,id:command.id+'-open-edit',text:'EDIT'},club.target).state;s=club.state;
+    const count=s.outbox.length;club.state=handleHelperEdit(s,{...command,id:command.id+'-open-edit',text:'EDIT'},club.target).state;s=club.state;s.outbox.splice(count);
    }
+   followup=translated;
    command={...command,text:translated.text};
    // Exact role lines also work directly in a returning Secretary's chat.
    if(s?.stage==='complete'&&!s.memberEdit&&/^\s*[^:]+:\s*[^:]+/.test(command.text)){
-    club.state=handleHelperEdit(s,{...command,id:command.id+'-open-edit',text:'EDIT'},club.target).state;s=club.state;
+    const count=s.outbox.length;club.state=handleHelperEdit(s,{...command,id:command.id+'-open-edit',text:'EDIT'},club.target).state;s=club.state;s.outbox.splice(count);
    }
   }
   const edit=handleHelperEdit(s,command,club.target);
@@ -92,6 +96,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
    }catch(error){s.outbox.push({kind:'text',text:error.message});}
   }else club.state=applySetup(s,command,now(),{pilotMode});
   if(club.state?.stage==='complete'&&!club.target&&!club.state.groupHelpSent){club.state.groupHelpSent=true;club.state.outbox.push({kind:'text',text:club.state.pilotMode?'Add the helper to your club group, then send CONNECT GROUP followed by its name. You can connect one group for your club.':'Add the helper to your test group, then send CONNECT TEST GROUP followed by its name. Each Secretary can connect one club group.'});}
+  if(followup&&club.state.memberEdit?.stage==='preview'&&!club.state.memberEdit.pendingEdits){const next=replacementQuestion(club.state,followup.replacements,followup.questionAfter);if(next.pending)club.state.secretaryQuestion=next.pending;if(next.question)club.state.outbox.push({kind:'text',text:next.question});}
   await save();await flush();await deliverCorrection();await ensureMembers();
  }
  async function group(event){
@@ -101,7 +106,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
  }
  async function processMembers(){
   let s=club.state,live=s?.memberLive;
-  if(s?.memberEdit||!s?.groupLink?.connected||!live?.inbox.length||live.retryAt>now())return;
+  if(s?.memberEdit?.send||s?.memberEdit?.stage==='post_ready'||!s?.groupLink?.connected||!live?.inbox.length||live.retryAt>now())return;
   try{
    if(!live.pendingBatch){const messages=live.inbox.slice(0,10),result=await interpret(live.board,messages,'availability',{pilotAuthorized:s.pilotMode===true});live.pendingBatch={messages,decisions:result.decisions};await save();}
    club.state=applyMembers(s,live.pendingBatch.messages,live.pendingBatch.decisions,club.target,identity);scheduleMemberTest(club.state,now());await save();await flush();status('Club member batch processed.');
@@ -114,6 +119,13 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save,int
  async function tick(){
   if(pilotMode&&club.state&&!club.state.pilotMode){club.state.pilotMode=true;club.state.chatVersion=2;await save();}
   await flush();if(queueClubReminder(club.state,now())){await save();await flush();}await deliverCorrection();await ensureMembers();await processMembers();
+  const reminderDue=draftReminderDue(club.state,now());
+  if(reminderDue){
+   const s=club.state;syncDraft(s);s.memberEdit.remindedAt=reminderDue;
+   s.outbox.push({kind:'text',text:`You have an unfinished draft. The scheduled group board time is ${s.postingTime||'8:00 PM'} India time. Confirmed member updates will still post if the approved board changed. Check your draft preview: APPROVE · EDIT · CANCEL.${s.memberEdit.pendingEdits?' Some correction lines still need fixing before approval.':''}`});
+   queueDraftPreview(s);const question=conflictQuestion(s);if(question)s.outbox.push({kind:'text',text:question});
+   await save();await flush();
+  }
   if(club.state?.memberLive&&club.state.groupLink?.connected){
    try{if(await deliverMemberUpdate({...options(),now:now()})){await flush();status('Changed club board delivered.');}}
    catch(error){const s=club.state;if(!s.memberDeliveryFailureNotified){s.memberDeliveryFailureNotified=true;s.outbox.push({kind:'text',text:error.message});await save();await flush();}}

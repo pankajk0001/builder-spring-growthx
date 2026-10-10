@@ -6,7 +6,7 @@ const {createHash}=require('node:crypto');
 const {parseMeetingTime,timeMinutes,meetingCutoff}=require('./meeting-cycle.cjs');
 const {sendHelperTestGroupBoard}=require('./preview-delivery.cjs');
 function memberProjection(s,target,identity){
- return {board:s.board,meeting:s.meeting,postingTime:s.postingTime,pilotMode:s.pilotMode,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
+ return {board:s.board,meeting:s.meeting,postingTime:s.postingTime,pilotMode:s.pilotMode,testOnly:s.testOnly,status:s.stage==='complete'&&!s.memberEdit?.send?'approved':'awaiting_approval',requestId:s.approvedHash,approvedBoardHash:s.approvedHash,
   targetGroupId:target.groupId,...identity,groupPost:{...s.helperGroupPost,deliveryReceiptVerified:s.helperGroupPost?.status==='sent'&&Boolean(s.helperGroupPost.serverAckVerified||s.helperGroupPost.phoneDeliveryVerified),postedAt:new Date(s.memberListeningStartedAt||0).toISOString()},
   live:s.memberLive,ownIds:[s.helperGroupPost?.id,...Object.values(s.memberLive?.posts||{}).map(p=>p.id)].filter(Boolean),outbox:[]};
 }

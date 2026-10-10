@@ -15,13 +15,21 @@ test('correction requires delivered latest preview, preserves valid lines and ca
  s=handleHelperEdit(s,{id:'old',text:'APPROVE',replyTo:'old'},target).state;assert.equal(s.memberEdit.stage,'preview');
  s=handleHelperEdit(s,{id:'cancel',text:'CANCEL'},target).state;assert.equal(s.memberEdit,null);assert.equal(s.helperGroupPost.id,'original');
 });
-test('approved correction posts the exact preview once and keeps pending member messages',async()=>{
+test('approved correction posts the exact preview once after queued replies are checked',async()=>{
  let s=handleHelperEdit(ready(),{id:'edit',text:'EDIT'},target).state;s.outbox=[];
  s=handleHelperEdit(s,{id:'change',text:'Listener: Lena Example'},target).state;
  s.memberEdit.previewAcknowledged=true;s.memberEdit.previewReceipt={id:'preview',sha256:s.memberEdit.boardHash};s=handleHelperEdit(s,{id:'approve',text:'APPROVE'},target).state;
- s.memberLive.inbox=[{id:'pending'}];let sends=0;const identity={secretaryId:'111@s.whatsapp.net'},helper={secretaryId:'222@s.whatsapp.net'};
+ let sends=0;const identity={secretaryId:'111@s.whatsapp.net'},helper={secretaryId:'222@s.whatsapp.net'};
  const options={state:s,target,identity,helper,socket:{groupMetadata:async()=>({id:target.groupId,subject:target.name,participants:[{id:identity.secretaryId},{id:helper.secretaryId}]})},save:async()=>{},acknowledgements:{wait:async()=>{}},sendImage:async(_s,_t,png)=>{sends++;return {id:'corrected',sha256:crypto.createHash('sha256').update(png).digest('hex')};}};
- assert.equal(await deliverHelperCorrection(options),true);assert.equal(s.memberEdit,null);assert.equal(s.memberLive.board.find(r=>r.role==='Grammarian').member,'Noah Example');assert.equal(s.memberLive.inbox.length,1);assert.equal(s.helperGroupPost.id,'corrected');assert.equal(await deliverHelperCorrection(options),false);assert.equal(sends,1);
+ assert.equal(await deliverHelperCorrection(options),true);assert.equal(s.memberEdit,null);assert.equal(s.memberLive.board.find(r=>r.role==='Grammarian').member,'Noah Example');assert.equal(s.memberLive.inbox.length,0);assert.equal(s.helperGroupPost.id,'corrected');assert.equal(await deliverHelperCorrection(options),false);assert.equal(sends,1);
+});
+test('queued unchecked member replies prevent an approved correction from posting',async()=>{
+ let s=handleHelperEdit(ready(),{id:'edit',text:'EDIT'},target).state;
+ s=handleHelperEdit(s,{id:'change',text:'Listener: Lena Example'},target).state;
+ s.memberEdit.previewAcknowledged=true;s.memberEdit.previewReceipt={id:'preview',sha256:s.memberEdit.boardHash};s=handleHelperEdit(s,{id:'approve',text:'APPROVE'},target).state;
+ s.memberLive.inbox=[{id:'pending'}];let sends=0;
+ assert.equal(await deliverHelperCorrection({state:s,save:async()=>{},sendImage:async()=>{sends++;}}),false);
+ assert.equal(sends,0);assert.equal(s.memberEdit.stage,'preview');assert.equal(s.memberLive.inbox.length,1);assert.equal(s.memberEdit.previewAcknowledged,false);
 });
 test('preview offers EDIT and reopening it preserves the current correction draft',()=>{
  let s=handleHelperEdit(ready(),{id:'edit',text:'EDIT'},target).state;s.outbox=[];
