@@ -17,6 +17,21 @@ function fixture(){
  return {registry,A,B,sent,calls,create,socket};
 }
 const command=(id,text,replyTo)=>({id,text,replyTo});
+test('owner pause stops private sends, member changes and due posting while another club continues',async()=>{
+ const {applyControl,controlToken}=require('../src/admin-controls.cjs');const f=fixture();let clock=now;
+ const eA=f.create(f.A,{now:()=>clock}),eB=f.create(f.B,{now:()=>clock});
+ for(const e of [eA,eB]){await e.command(command('connect','CONNECT TEST GROUP'));await e.command(command('post','POST TEST BOARD'));}
+ await eA.group(groupMessage(tA,a,'before-pause','Noah Example: take Grammarian'));await eA.tick();
+ const state=structuredClone(f.A.state);applyControl(f.registry,{id:'owner-pause',clubId:f.A.id,kind:'pause',expected:controlToken(f.A),requestedAt:clock},clock);
+ f.sent.length=0;clock=Date.parse('2026-10-07T14:30:00Z');
+ await eA.group(groupMessage(tA,a,'paused-claim','Zara Example: take Timer'));await eA.command(command('paused-table','TABLE'));await eA.flush();await eA.tick();
+ assert.deepEqual(f.A.state,state);assert.equal(f.sent.length,0);
+ await eB.command(command('other-table','TABLE'));assert.ok(f.sent.length);assert.ok(f.sent.every(s=>s.jid===b.secretaryId));
+ applyControl(f.registry,{id:'owner-resume',clubId:f.A.id,kind:'resume',expected:controlToken(f.A),requestedAt:clock},clock);
+ f.sent.length=0;await eA.group(groupMessage(tA,a,'paused-claim','Zara Example: take Timer'));await eA.tick();
+ assert.equal(f.A.state.memberLive.board.find(r=>r.role==='Timer').member,null);assert.equal(f.sent.filter(s=>s.jid===tA.groupId).length,0);
+ assert.ok(Date.parse(f.A.state.memberLive.nextAt)>clock);await eA.command(command('after-resume','TABLE'));assert.ok(f.sent.some(s=>s.jid===a.secretaryId));
+});
 function groupMessage(target,who,id,text){return {type:'notify',message:{key:{id,fromMe:false,remoteJid:target.groupId,participant:who.secretaryId},messageTimestamp:now/1000+1,message:{conversation:text}}};}
 test('two club setups, private tables, initial approved images and role replies stay isolated',async()=>{
  const f=fixture(),eA=f.create(f.A),eB=f.create(f.B);

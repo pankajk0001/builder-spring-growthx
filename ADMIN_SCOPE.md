@@ -1,6 +1,6 @@
 # Owner admin panel — approved V1 scope
 
-Approved on 2026-10-11. This is a web interface for the product owner; the Secretary and member product remains in WhatsApp. Planning is approved, implementation has not started.
+Approved on 2026-10-11. This is a web interface for the product owner; the Secretary and member product remains in WhatsApp. Owner access, overview and activity tracking are live and user-confirmed. Pause/resume is live and user-confirmed; reset/restore and handover remain later milestones.
 
 ## Purpose and access
 

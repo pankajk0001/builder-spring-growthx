@@ -13,6 +13,7 @@ const {queueClubReminder}=require('./club-reminders.cjs');
 const {translateSecretary,replacementQuestion}=require('./secretary-language.cjs');
 const {begin}=require('./secretary-setup.cjs');
 const {ensureActivity,recordActivity,activityMarkers,observeActivity}=require('./admin-activity.cjs');
+const {acceptMessage,rebaseResumeSchedule}=require('./admin-controls.cjs');
 function createClubEngine({registry,club,socket,helper,acknowledgements,save:persist,interpret,interpretSecretary,now=Date.now,status=()=>{},sendPreview=sendPrivateBoardPreview,sendImage,enableMembers=true,pilotMode=false}){
  const identity=club.identity;
  ensureActivity(club,now());let markers=activityMarkers(club);
@@ -20,6 +21,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save:per
  const failedDelivery=key=>recordActivity(club,'delivery_failure',key,now(),now());
  const options=()=>({state:club.state,target:club.target,identity,helper,socket,acknowledgements,save,now:now(),...(sendImage?{sendImage}:{})});
  async function flush(){
+  if(club.paused)return;
   const state=club.state;
   while(state?.outbox.length){
    const item=state.outbox[0];
@@ -65,6 +67,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save:per
   catch(error){const s=club.state;if(!s.memberEdit.deliveryErrorNotified){s.memberEdit.deliveryErrorNotified=true;failedDelivery('correction|'+s.memberEdit.boardHash+'|'+now());s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
  }
  async function command(command){
+  if(club.paused||command.timestamp!==undefined&&!acceptMessage(club,command.timestamp))return;
   if(!club.state?.seen.includes(command.id)&&recordActivity(club,'secretary_message',command.id,now(),now()))await save();
   await processMembers();
   let s=club.state;
@@ -105,6 +108,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save:per
   await save();await flush();await deliverCorrection();await ensureMembers();
  }
  async function group(event){
+  if(!acceptMessage(club,Number(event.message?.messageTimestamp)*1000))return;
   if(!club.target||!club.state)return;
   await ensureMembers();const message=readMember(event,club.state,club.target,identity);
   if(message){club.state=queueMember(club.state,message,club.target,identity);await save();}
@@ -126,6 +130,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save:per
   }
  }
  async function tick(){
+  if(club.paused)return;
   if(pilotMode&&club.state&&!club.state.pilotMode){club.state.pilotMode=true;club.state.chatVersion=2;await save();}
   await flush();if(queueClubReminder(club.state,now())){await save();await flush();}await deliverCorrection();await ensureMembers();await processMembers();
   const reminderDue=draftReminderDue(club.state,now());
@@ -136,6 +141,7 @@ function createClubEngine({registry,club,socket,helper,acknowledgements,save:per
    await save();await flush();
   }
   if(club.state?.memberLive&&club.state.groupLink?.connected){
+   if(rebaseResumeSchedule(club,now()))await save();
    try{if(await deliverMemberUpdate({...options(),now:now()})){await flush();status('Changed club board delivered.');}}
    catch(error){const s=club.state;if(!s.memberDeliveryFailureNotified){s.memberDeliveryFailureNotified=true;failedDelivery('member|'+s.memberLive.nextAt+'|'+now());s.outbox.push({kind:'text',text:error.message});await save();await flush();}}
   }

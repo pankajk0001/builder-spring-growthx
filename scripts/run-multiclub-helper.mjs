@@ -17,8 +17,12 @@ require('../src/test-group.cjs').assertRunnerHome(config,homedir());
 const store=await loadClubStore(join(dir,'multi-club-state.json'),config,join(dir,'secretary-setup-state.json'));
 const {registry,save}=store;
 const {ensureActivity,recordActivity}=require('../src/admin-activity.cjs');
+const {acceptMessage}=require('../src/admin-controls.cjs');
+const {createAdminControlClient}=require('../src/admin-control-client.cjs');
 for(const club of registry.clubs)ensureActivity(club,Date.now());
 registry.serviceHealth={connected:false,lastCheckAt:Date.now(),startedAt:Date.now()};await save();
+let adminControls=null;
+try{const privateConfig=JSON.parse(await readFile(join(dir,'admin-sync.json'),'utf8'));adminControls=createAdminControlClient({config:privateConfig,registry,save});}catch{}
 const status=text=>process.stdout.write(text+'\n');console.log=console.info=console.warn=()=>{};
 const bridge=join(homedir(),'.hermes','hermes-agent','scripts','whatsapp-bridge'),r=createRequire(join(bridge,'package.json'));
 const b=await import(pathToFileURL(r.resolve('@whiskeysockets/baileys')).href);
@@ -37,17 +41,26 @@ function engine(club){
  }
  return engines.get(club.id);
 }
-let queue=Promise.resolve(),credentials=Promise.resolve(),accepting=false,timer,resolveEnd;
+let queue=Promise.resolve(),credentials=Promise.resolve(),accepting=false,fatalStorage=false,timer,resolveEnd;
 const finished=new Promise(resolve=>resolveEnd=resolve),start=Math.floor(Date.now()/1000)*1000;
+async function pollControls(){
+ if(!adminControls)return;
+ try{await adminControls.poll();}
+ catch(error){
+  if(error.code==='ADMIN_STORAGE_FAILED'){fatalStorage=true;accepting=false;clearInterval(timer);process.exitCode=1;resolveEnd();status('Admin control storage failed; helper stopped.');}
+  else status('Admin controls unavailable; existing club settings retained.');
+ }
+}
 function enqueue(club,work){
  queue=queue.then(async()=>{
+  if(fatalStorage)return;
   if(club?.paused)return;
   try{await work();}
   catch(error){
    if(club){recordActivity(club,'delivery_failure','runner|'+Date.now(),Date.now(),Date.now());club.paused={reason:'Unverified delivery or processing error; inspect this club before recovery.',at:new Date().toISOString()};await save();status('One club paused; other clubs remain active.');}
    else{status('Private message could not be verified; no club was changed.');}
   }
- }).catch(()=>{accepting=false;process.exitCode=1;resolveEnd();status('Club storage could not be saved; helper stopped.');});
+ }).catch(()=>{fatalStorage=true;accepting=false;process.exitCode=1;resolveEnd();status('Club storage could not be saved; helper stopped.');});
 }
 async function resolveSecretary(message){
  const jid=normalize(message.key.remoteJid),alternate=normalize(message.key.remoteJidAlt);
@@ -73,25 +86,26 @@ sock.ev.on('messages.upsert',event=>{
  for(const original of event.messages){
   const message={...original,message:b.extractMessageContent(original.message)};
   const group=findGroup(registry,message.key?.remoteJid);
-  if(group){enqueue(group,()=>engine(group).group({type:event.type,message}));continue;}
+  if(group){if(acceptMessage(group,Number(message.messageTimestamp)*1000))enqueue(group,()=>engine(group).group({type:event.type,message}));continue;}
   const timestamp=Number(message.messageTimestamp)*1000;
   if(event.type!=='notify'||message.key?.fromMe!==false||!message.key.id||!Number.isFinite(timestamp)||timestamp<start)continue;
+  const arrivedAt=Date.now(),arrivingClub=findSecretary(registry,message.key.remoteJid),arrivedPaused=!!arrivingClub?.paused;
   enqueue(null,async()=>{
    const club=await resolveSecretary(message);if(!club)return;
    if(recordActivity(club,'secretary_message',message.key.id,timestamp,Date.now()))await save();
-   if(club.paused)return;
+   if(arrivedPaused||!acceptMessage(club,timestamp)||!acceptMessage(club,arrivedAt))return;
    const command=incoming(message,club.identity,start);if(!command)return;
    // Keep all club work in the same serial queue; failures pause only its owner.
-   try{await engine(club).command(command);}
+   try{await engine(club).command({...command,timestamp});}
    catch(error){recordActivity(club,'delivery_failure','private|'+command.id,Date.now(),Date.now());club.paused={reason:'Unverified private delivery; inspect this club before recovery.',at:new Date().toISOString()};await save();status('One club paused; other clubs remain active.');}
   });
  }
 });
 sock.ev.on('connection.update',update=>{
  if(update.connection==='open'){
-  accepting=true;enqueue(null,async()=>{registry.serviceHealth.connected=true;registry.serviceHealth.lastCheckAt=Date.now();await save();});status('Shared helper connected; isolated clubs ready.');
+  accepting=true;enqueue(null,async()=>{registry.serviceHealth.connected=true;registry.serviceHealth.lastCheckAt=Date.now();await save();await pollControls();});status('Shared helper connected; isolated clubs ready.');
   for(const club of registry.clubs)enqueue(club,()=>engine(club).tick());
-  clearInterval(timer);timer=setInterval(()=>{enqueue(null,async()=>{registry.serviceHealth.lastCheckAt=Date.now();await save();});for(const club of registry.clubs)enqueue(club,()=>engine(club).tick());},15000);
+  clearInterval(timer);timer=setInterval(()=>{enqueue(null,async()=>{registry.serviceHealth.lastCheckAt=Date.now();await save();await pollControls();});for(const club of registry.clubs)enqueue(club,()=>engine(club).tick());},15000);
  }
  if(update.connection==='close'){accepting=false;enqueue(null,async()=>{registry.serviceHealth.connected=false;registry.serviceHealth.lastCheckAt=Date.now();await save();});process.exitCode=1;resolveEnd();}
 });
