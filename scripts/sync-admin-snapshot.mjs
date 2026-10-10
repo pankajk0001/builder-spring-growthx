@@ -1,0 +1,12 @@
+import {readFile} from 'node:fs/promises';
+import {homedir} from 'node:os';
+import {join} from 'node:path';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url),{projectRegistry}=require('../src/admin-snapshot.cjs');
+const dir=join(homedir(),'.hermes/the-helper');
+const config=JSON.parse(await readFile(join(dir,'admin-sync.json'),'utf8'));
+const url=new URL(config.url);if(url.protocol!=='https:'||!url.hostname.endsWith('.convex.site'))throw Error('Expected the private Convex upload endpoint.');
+const registry=JSON.parse(await readFile(join(dir,'multi-club-state.json'),'utf8'));
+const response=await fetch(url,{method:'POST',headers:{authorization:config.secret,'content-type':'application/json'},body:JSON.stringify(projectRegistry(registry)),signal:AbortSignal.timeout(15000)});
+if(!response.ok)throw Error('Admin snapshot upload failed: '+response.status);
+console.log('Read-only admin snapshot updated.');

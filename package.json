@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node scripts/run-milestone-6.mjs --weekly",
     "test:whatsapp:weekly": "node scripts/run-milestone-6.mjs --weekly",
-    "test": "node --test test/*.test.cjs",
+    "test": "node --test test/*.test.cjs && npm run test:admin",
     "deploy": "npx @convex-dev/static-hosting deploy",
     "test:whatsapp": "node scripts/run-milestone-1.mjs",
     "test:whatsapp:roles": "node scripts/run-milestone-2.mjs",
@@ -15,15 +15,32 @@
     "test:whatsapp:post": "node scripts/run-milestone-5.mjs",
     "test:whatsapp:edit": "node scripts/run-milestone-6.mjs",
     "test:whatsapp:restart": "node scripts/run-milestone-7.mjs",
-    "build": "node scripts/build-landing.mjs"
+    "build": "node scripts/build-landing.mjs",
+    "test:admin": "vitest run test/admin-backend.test.ts",
+    "postdeploy": "node scripts/publish-auth-discovery.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@auth/core": "^0.41.3",
+    "@convex-dev/auth": "0.0.96",
     "@convex-dev/static-hosting": "^0.2.1",
     "@napi-rs/canvas": "^1.0.10",
-    "convex": "^1.46.0"
+    "convex": "^1.46.0",
+    "esbuild": "^0.28.2",
+    "jose": "^6.2.12",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "convex-test": "^0.0.61",
+    "playwright-core": "^1.64.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }

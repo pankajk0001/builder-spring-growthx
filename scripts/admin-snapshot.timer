@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the private helper overview once per minute
+
+[Timer]
+OnBootSec=45
+OnUnitActiveSec=60
+Unit=admin-snapshot.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Read-only helper account overview sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/build-sprint-app
+ExecStart=/usr/local/bin/node /home/ubuntu/build-sprint-app/scripts/sync-admin-snapshot.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
